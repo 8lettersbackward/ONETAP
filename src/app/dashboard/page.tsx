@@ -361,17 +361,24 @@ export default function DashboardPage() {
     if (!user || !db || !devices) return;
     
     const nodeAlertGroups = node.alertGroups || [];
+    const groupsText = nodeAlertGroups.length > 0 ? nodeAlertGroups.join(", ") : "None assigned";
     const targetBuddies = devices.filter(d => d.category === 'buddy' && nodeAlertGroups.includes(d.group));
 
     if (targetBuddies.length > 0) {
       targetBuddies.forEach(buddy => {
-        createNotification(`ALERT: SOS from Node ${node.name}. Contact ${buddy.name} (${buddy.phoneNumber}) notified.`);
+        createNotification(`ALERT: SOS from Node ${node.name} (Target Groups: ${groupsText}). Contact ${buddy.name} notified.`);
       });
-      toast({ title: "Orchestration Success", description: `Alerts dispatched to ${targetBuddies.length} buddies.` });
+      toast({ 
+        title: "SOS Triggered", 
+        description: `Alerts dispatched for groups: ${groupsText}. Total contacts reached: ${targetBuddies.length}.` 
+      });
     } else {
-      const groupsText = nodeAlertGroups.length > 0 ? nodeAlertGroups.join(", ") : "None assigned";
-      createNotification(`WARNING: SOS from Node ${node.name} triggered, but NO CONTACTS found in groups: ${groupsText}`);
-      toast({ variant: "destructive", title: "Orchestration Warning", description: "No buddies found in the assigned groups. Check your registry." });
+      createNotification(`WARNING: SOS from Node ${node.name} triggered for groups: ${groupsText}, but NO CONTACTS found.`);
+      toast({ 
+        variant: "destructive", 
+        title: "Orchestration Warning", 
+        description: `No buddies found in the assigned groups: ${groupsText}. Check your registry.` 
+      });
     }
   };
 
