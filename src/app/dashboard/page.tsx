@@ -64,13 +64,15 @@ import {
   Navigation,
   Star,
   Zap,
-  Pulse
+  Pulse,
+  Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, serverTimestamp } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { PieChart, Pie, Cell, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -115,7 +117,6 @@ export default function DashboardPage() {
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -315,6 +316,26 @@ export default function DashboardPage() {
         setEditingDevice(null);
         toast({ title: "Registry Updated", description: "Changes saved to the encrypted network." });
       });
+  };
+
+  const handleUpdateLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !rtdb) return;
+    setUpdatingLocation(true);
+    
+    const userProfileRef = ref(rtdb, `users/${user.uid}/profile`);
+    set(userProfileRef, {
+      ...profileData,
+      latitude: parseFloat(locationData.lat),
+      longitude: parseFloat(locationData.lng),
+      updatedAt: serverTimestamp()
+    })
+      .then(() => {
+        createNotification(`Updated safety beacon coordinates.`);
+        toast({ title: "Coordinates Locked", description: "New GPS data synchronized." });
+      })
+      .catch((error) => toast({ variant: "destructive", title: "Sync Failed", description: error.message }))
+      .finally(() => setUpdatingLocation(false));
   };
 
   const triggerNodeAlert = (node: any) => {
@@ -563,9 +584,6 @@ export default function DashboardPage() {
                 <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
                   <UserPlus className="h-4 w-4" /> Enlist Buddy
                 </Button>
-                <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
-                  <Layers className="h-4 w-4" /> Manage Groups
-                </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -789,7 +807,7 @@ export default function DashboardPage() {
             <form onSubmit={(e) => handleRegisterDevice(e, 'buddy')} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="buddy-name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
-                <Input id="buddy-name" placeholder="e.g. Elvin" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                <Input id="buddy-name" placeholder="e.g. Garry" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
