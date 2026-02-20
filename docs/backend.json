@@ -70,7 +70,8 @@
       "properties": {
         "sosTrigger": { "type": "boolean" },
         "sender": { "type": "string" },
-        "timestamp": { "type": "number" }
+        "timestamp": { "type": "number" },
+        "triggeredByNode": { "type": "string" }
       }
     }
   },
@@ -80,19 +81,19 @@
   "firestore": {
     "users/{userId}/profile": {
       "schema": "UserProfile",
-      "description": "Emergency responder contact info in Realtime Database."
+      "description": "Emergency responder contact info."
     },
     "users/{userId}/devices/{deviceId}": {
       "schema": "Device",
-      "description": "Safety devices or buddies registered to a user in Realtime Database."
+      "description": "Safety devices or buddies registered to a user."
     },
     "users/{userId}/notifications/{notificationId}": {
       "schema": "Notification",
-      "description": "Personal safety alert history in Realtime Database."
+      "description": "Personal safety alert history."
     },
     "esp_queue/{userId}/{buddyId}": {
       "schema": "ESPQueueEntry",
-      "description": "Queue for hardware device synchronization in Realtime Database."
+      "description": "Queue for hardware device synchronization."
     },
     "sosSystem": {
       "schema": "SOSStatus",
