@@ -1,71 +1,47 @@
 
 {
   "entities": {
-    "Device": {
-      "title": "Safety Device / Buddy",
-      "description": "A registered emergency or safety hardware device or a human buddy.",
+    "Buddy": {
+      "title": "Emergency Buddy",
+      "description": "A human contact for emergency orchestration.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "role": { "type": "string" },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "groups": { "type": "array", "items": { "type": "string" }, "description": "The protocol groups this buddy belongs to." },
+        "registeredAt": { "type": "number" }
+      },
+      "required": ["name", "phoneNumber", "priority"]
+    },
+    "SecurityGroup": {
+      "title": "Security Protocol Group",
+      "description": "A reusable group for contact orchestration (e.g., Family, Close Friend).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Node": {
+      "title": "ESP32 Safety Node",
+      "description": "A registered hardware safety device.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nodeName": { "type": "string" },
+        "hardwareId": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline", "error"] },
-        "ownerId": { "type": "string" },
-        "type": { "type": "string", "description": "The specific type or relationship of the asset." },
-        "category": { "type": "string", "enum": ["buddy", "node"] },
-        "phoneNumber": { "type": "string", "description": "Contact number for human buddies." },
-        "role": { "type": "string", "description": "The safety role of the buddy, e.g., Primary Emergency Contact." },
-        "priority": { "type": "string", "enum": ["Low", "Medium", "High"], "description": "The alert priority for this contact." },
-        "groups": { "type": "array", "items": { "type": "string" }, "description": "The safety groups this buddy belongs to." },
-        "alertGroups": { "type": "array", "items": { "type": "string" }, "description": "The buddy groups alerted by this node." },
-        "specialData": { "type": "string", "description": "Additional custom data or specific safety info." },
-        "registeredAt": { "type": "number" },
-        "lastActiveAt": { "type": "number" }
+        "targetGroups": { "type": "array", "items": { "type": "string" }, "description": "The buddy groups this node alerts." },
+        "registeredAt": { "type": "number" }
       },
-      "required": ["name", "ownerId", "status", "category"]
-    },
-    "Notification": {
-      "title": "Safety Alert",
-      "description": "Emergency or safety system notification.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "message": { "type": "string" },
-        "read": { "type": "boolean" },
-        "createdAt": { "type": "number" }
-      },
-      "required": ["userId", "message", "read"]
-    },
-    "UserProfile": {
-      "title": "User Profile",
-      "description": "Personal safety identification and emergency contact details.",
-      "type": "object",
-      "properties": {
-        "displayName": { "type": "string" },
-        "email": { "type": "string" },
-        "avatarUrl": { "type": "string" },
-        "latitude": { "type": "number" },
-        "longitude": { "type": "number" }
-      }
-    },
-    "ESPQueueEntry": {
-      "title": "ESP Sync Entry",
-      "description": "Data mirrored for hardware synchronization (ESP32/ESP8266).",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "phone": { "type": "string" },
-        "priority": { "type": "string" },
-        "uid": { "type": "string" },
-        "buddyId": { "type": "string" },
-        "groups": { "type": "string", "description": "Comma-separated list of groups." },
-        "processed": { "type": "boolean" },
-        "timestamp": { "type": "number" }
-      }
+      "required": ["nodeName", "hardwareId", "status"]
     },
     "SOSStatus": {
-      "title": "SOS Status",
-      "description": "Master SOS trigger data.",
+      "title": "Master SOS Status",
+      "description": "Global SOS trigger data for hardware synchronization.",
       "type": "object",
       "properties": {
         "sosTrigger": { "type": "boolean" },
@@ -82,21 +58,17 @@
     "providers": ["email"]
   },
   "firestore": {
-    "users/{userId}/profile": {
-      "schema": "UserProfile",
-      "description": "Emergency responder contact info."
+    "users/{userId}/buddies/{buddyId}": {
+      "schema": "Buddy",
+      "description": "Emergency contacts registered to a user."
     },
-    "users/{userId}/devices/{deviceId}": {
-      "schema": "Device",
-      "description": "Safety devices or buddies registered to a user."
+    "users/{userId}/buddyGroups/{groupId}": {
+      "schema": "SecurityGroup",
+      "description": "Reusable security protocol groups."
     },
-    "users/{userId}/notifications/{notificationId}": {
-      "schema": "Notification",
-      "description": "Personal safety alert history."
-    },
-    "esp_queue/{userId}/{buddyId}": {
-      "schema": "ESPQueueEntry",
-      "description": "Queue for hardware device synchronization."
+    "users/{userId}/nodes/{nodeId}": {
+      "schema": "Node",
+      "description": "ESP32 nodes registered to a user."
     },
     "sosSystem": {
       "schema": "SOSStatus",
