@@ -44,10 +44,11 @@ import {
   MapPin,
   Zap,
   PlusCircle,
-  AlertTriangle
+  Pencil,
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ref, set, push, remove, serverTimestamp } from "firebase/database";
+import { ref, set, push, remove, serverTimestamp, update } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell } from "recharts";
@@ -93,8 +94,13 @@ export default function DashboardPage() {
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
+  const [isEditBuddyDialogOpen, setIsEditBuddyDialogOpen] = useState(false);
+  const [isEditNodeDialogOpen, setIsEditNodeDialogOpen] = useState(false);
+  const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [itemToView, setItemToView] = useState<any>(null);
+  const [itemToEdit, setItemToEdit] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
@@ -109,17 +115,7 @@ export default function DashboardPage() {
     }
     const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
-
-    if (typeof window !== 'undefined' && user && rtdb) {
-      (window as any).triggerSOS = () => {
-        set(ref(rtdb, "sosSystem"), {
-          sosTrigger: true,
-          sender: currentName,
-          timestamp: Date.now()
-        });
-      };
-    }
-  }, [user, userLoading, router, currentName, rtdb]);
+  }, [user, userLoading, router]);
 
   const profileRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/profile`) : null, [rtdb, user]);
   const { data: profileData } = useRtdb(profileRef);
@@ -217,6 +213,19 @@ export default function DashboardPage() {
       .finally(() => setRegisterLoading(false));
   };
 
+  const handleUpdateBuddy = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !rtdb || !itemToEdit) return;
+    setRegisterLoading(true);
+    update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), itemToEdit)
+      .then(() => {
+        setIsEditBuddyDialogOpen(false);
+        setItemToEdit(null);
+        toast({ title: "Buddy Updated" });
+      })
+      .finally(() => setRegisterLoading(false));
+  };
+
   const handleRegisterNode = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !rtdb) return;
@@ -228,6 +237,19 @@ export default function DashboardPage() {
         setIsAddNodeDialogOpen(false);
         setNodeForm({ nodeName: '', hardwareId: '', targetGroups: [] });
         toast({ title: "Node Armed" });
+      })
+      .finally(() => setRegisterLoading(false));
+  };
+
+  const handleUpdateNode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !rtdb || !itemToEdit) return;
+    setRegisterLoading(true);
+    update(ref(rtdb, `users/${user.uid}/nodes/${itemToEdit.id}`), itemToEdit)
+      .then(() => {
+        setIsEditNodeDialogOpen(false);
+        setItemToEdit(null);
+        toast({ title: "Node Updated" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -413,6 +435,8 @@ export default function DashboardPage() {
                           ))}
                         </div>
                         <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3 w-3 mr-1" /> View</Button>
+                          <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3 w-3 mr-1" /> Edit</Button>
                           <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </CardContent>
@@ -457,6 +481,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex gap-2">
                           <Button variant="default" size="sm" className="rounded-none text-[8px] uppercase font-bold gap-2" onClick={() => triggerNodeAlert(node)}><Zap className="h-3 w-3" /> Trigger SOS</Button>
+                          <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3 w-3" /></Button>
                           <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </CardContent>
@@ -569,6 +594,59 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
+        <DialogContent className="rounded-none border-none">
+          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Buddy</DialogTitle></DialogHeader>
+          {itemToEdit && (
+            <form onSubmit={handleUpdateBuddy} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">Full Name</Label>
+                <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} required className="rounded-none" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
+                <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} required className="rounded-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold">Role</Label>
+                  <Input value={itemToEdit.role} onChange={e => setItemToEdit({...itemToEdit, role: e.target.value})} className="rounded-none" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold">Priority</Label>
+                  <Select value={itemToEdit.priority} onValueChange={v => setItemToEdit({...itemToEdit, priority: v})}>
+                    <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">Protocol Groups</Label>
+                <div className="grid grid-cols-2 gap-2 p-2 border border-dashed">
+                  {buddyGroups.map(g => (
+                    <div key={g} className="flex items-center gap-2">
+                      <Checkbox checked={itemToEdit.groups?.includes(g)} onCheckedChange={() => {
+                        const groups = itemToEdit.groups || [];
+                        const updated = groups.includes(g) ? groups.filter((x: string) => x !== g) : [...groups, g];
+                        setItemToEdit({...itemToEdit, groups: updated});
+                      }} />
+                      <span className="text-[10px] uppercase font-bold">{g}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Button type="submit" className="w-full rounded-none h-12 uppercase font-bold" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Buddy"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
         <DialogContent className="rounded-none border-none">
           <DialogHeader><DialogTitle className="uppercase font-bold">Arm Node</DialogTitle></DialogHeader>
@@ -599,6 +677,75 @@ export default function DashboardPage() {
               {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Arm Hardware"}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
+        <DialogContent className="rounded-none border-none">
+          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Node</DialogTitle></DialogHeader>
+          {itemToEdit && (
+            <form onSubmit={handleUpdateNode} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">Node Name</Label>
+                <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} required className="rounded-none" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">Hardware ID</Label>
+                <Input value={itemToEdit.hardwareId} disabled className="rounded-none bg-muted/50" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">Target Alert Groups</Label>
+                <div className="grid grid-cols-2 gap-2 p-2 border border-dashed">
+                  {buddyGroups.map(g => (
+                    <div key={g} className="flex items-center gap-2">
+                      <Checkbox checked={itemToEdit.targetGroups?.includes(g)} onCheckedChange={() => {
+                        const groups = itemToEdit.targetGroups || [];
+                        const updated = groups.includes(g) ? groups.filter((x: string) => x !== g) : [...groups, g];
+                        setItemToEdit({...itemToEdit, targetGroups: updated});
+                      }} />
+                      <span className="text-[10px] uppercase font-bold">{g}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Button type="submit" className="w-full rounded-none h-12 uppercase font-bold" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Node"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isViewItemDialogOpen} onOpenChange={setIsViewItemDialogOpen}>
+        <DialogContent className="rounded-none border-none">
+          <DialogHeader><DialogTitle className="uppercase font-bold">Asset Overview</DialogTitle></DialogHeader>
+          {itemToView && (
+            <div className="space-y-4 pt-4">
+               <div className="p-4 bg-muted/20 border border-dashed rounded-none">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Asset Identity</p>
+                  <p className="text-xl font-bold uppercase">{itemToView.name || itemToView.nodeName}</p>
+                  <p className="text-xs font-mono mt-1">{itemToView.phoneNumber || itemToView.hardwareId}</p>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-muted/20 border border-dashed rounded-none">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Status / Priority</p>
+                    <p className="text-sm font-bold uppercase">{itemToView.priority || itemToView.status || 'Active'}</p>
+                  </div>
+                  <div className="p-4 bg-muted/20 border border-dashed rounded-none">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Role / Type</p>
+                    <p className="text-sm font-bold uppercase">{itemToView.role || 'Hardware Node'}</p>
+                  </div>
+               </div>
+               <div className="p-4 bg-muted/20 border border-dashed rounded-none">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Assigned Protocols</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {(itemToView.groups || itemToView.targetGroups || []).map((g: string) => (
+                      <Badge key={g} className="rounded-none text-[8px] uppercase font-bold">{g}</Badge>
+                    ))}
+                  </div>
+               </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
