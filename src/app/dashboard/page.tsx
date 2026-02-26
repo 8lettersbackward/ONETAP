@@ -3,7 +3,7 @@
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,8 +68,9 @@ export default function DashboardPage() {
   const rtdb = useDatabase();
   const router = useRouter();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
   
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [hasMounted, setHasMounted] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -110,6 +111,7 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
+    setHasMounted(true);
     if (!userLoading && !user) {
       router.push("/login");
     }
@@ -132,16 +134,7 @@ export default function DashboardPage() {
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
 
-  useEffect(() => {
-    if (profileData) {
-      const lat = profileData.latitude?.toString() || '';
-      const lng = profileData.longitude?.toString() || '';
-      setLocationData({ lat, lng });
-      if (lat && lng) handleResolveLocation(parseFloat(lat), parseFloat(lng));
-    }
-  }, [profileData]);
-
-  const handleResolveLocation = async (lat: number, lng: number) => {
+  const handleResolveLocation = useCallback(async (lat: number, lng: number) => {
     setResolvingLocation(true);
     try {
       const result = await reverseGeocode({ latitude: lat, longitude: lng });
@@ -152,7 +145,16 @@ export default function DashboardPage() {
     } finally {
       setResolvingLocation(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (profileData && hasMounted) {
+      const lat = profileData.latitude?.toString() || '';
+      const lng = profileData.longitude?.toString() || '';
+      setLocationData({ lat, lng });
+      if (lat && lng) handleResolveLocation(parseFloat(lat), parseFloat(lng));
+    }
+  }, [profileData, hasMounted, handleResolveLocation]);
 
   const buddyGroups = useMemo(() => {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
@@ -279,7 +281,7 @@ export default function DashboardPage() {
     } else broadcastSOS();
   };
 
-  if (userLoading) {
+  if (userLoading || !hasMounted) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="flex flex-col items-center gap-4">
@@ -387,7 +389,9 @@ export default function DashboardPage() {
                       notifications.slice(0, 5).map(n => (
                         <div key={n.id} className="mb-4 pb-2 border-b border-dashed last:border-0">
                           <p className="text-[10px] font-bold uppercase">{n.message}</p>
-                          <p className="text-[8px] font-mono text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</p>
+                          <p className="text-[8px] font-mono text-muted-foreground">
+                            {hasMounted ? new Date(n.createdAt).toLocaleString() : 'Loading...'}
+                          </p>
                         </div>
                       ))
                     )}
