@@ -46,8 +46,7 @@ import {
   PlusCircle,
   Pencil,
   Eye,
-  ShieldAlert,
-  ShieldCheck
+  ShieldAlert
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, serverTimestamp, update } from "firebase/database";
@@ -264,40 +263,18 @@ export default function DashboardPage() {
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb) return;
 
-    if (!window.confirm("Sigurado ka bang i-trigger ang SOS sa GIRLFRIEND group?")) {
-      return;
-    }
-
     const broadcastSOS = async (lat?: number, lng?: number) => {
       const now = Date.now();
-      
-      try {
-        // 1. Set the trigger flag for ESP32
-        await set(ref(rtdb, 'sosSystem/trigger'), true);
-
-        // 2. Set lastWebTrigger and other metadata
-        await update(ref(rtdb, "sosSystem"), {
-          sosTrigger: true, // legacy flag
-          sender: currentName,
-          nodename: node.nodeName,
-          timestamp: now,
-          triggeredByNode: node.id,
-          latitude: lat || profileData?.latitude || null,
-          longitude: lng || profileData?.longitude || null,
-          lastWebTrigger: {
-            timestamp: now,
-            sender: user.email || "WebApp",
-            note: `Manual trigger from dashboard: ${node.nodeName}`
-          }
-        });
-
-        toast({ title: "SOS Triggered", description: "Signal broadcasted to emergency network." });
-        alert("SOS na-trigger mula sa Web App! Ipapadala na sa grupo.");
-      } catch (err: any) {
-        console.error("Error triggering SOS:", err);
-        toast({ variant: "destructive", title: "Error triggering SOS" });
-        alert("May problema — tingnan ang console (F12)");
-      }
+      update(ref(rtdb, "sosSystem"), {
+        sosTrigger: true,
+        sender: currentName,
+        nodename: node.nodeName,
+        timestamp: now,
+        triggeredByNode: node.id,
+        latitude: lat || profileData?.latitude || null,
+        longitude: lng || profileData?.longitude || null,
+      });
+      toast({ title: "SOS Triggered", description: "Signal broadcasted to emergency network." });
     };
 
     if ("geolocation" in navigator) {
@@ -373,16 +350,9 @@ export default function DashboardPage() {
         <div className="max-w-4xl mx-auto">
           {activeTab === 'overview' && (
             <div className="space-y-10">
-              <header className="mb-2 flex justify-between items-start">
-                <div>
-                  <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Demographics: Armed & Active</p>
-                </div>
-                {sosStatus?.sosTrigger && (
-                  <Badge className="bg-destructive text-destructive-foreground animate-pulse px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> SOS ACTIVE
-                  </Badge>
-                )}
+              <header className="mb-2">
+                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Demographics: Armed & Active</p>
               </header>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -398,19 +368,6 @@ export default function DashboardPage() {
                      </CardContent>
                    </Card>
                  ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                 <div className="flex-1 h-14 border border-dashed border-muted-foreground/30 flex items-center justify-center">
-                   {sosStatus?.sosTrigger ? (
-                     <div className="flex items-center gap-2">
-                       <ShieldAlert className="h-4 w-4 text-destructive animate-pulse" />
-                       <p className="text-[10px] uppercase font-bold tracking-widest text-destructive">Emergency Signal Broadcast in Progress</p>
-                     </div>
-                   ) : (
-                     <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-50">System Nominal / SOS Inactive</p>
-                   )}
-                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
