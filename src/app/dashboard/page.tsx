@@ -45,7 +45,9 @@ import {
   Zap,
   PlusCircle,
   Pencil,
-  Eye
+  Eye,
+  ShieldAlert,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, serverTimestamp, update } from "firebase/database";
@@ -133,6 +135,9 @@ export default function DashboardPage() {
 
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
+
+  const sosSystemRef = useMemo(() => ref(rtdb, "sosSystem"), [rtdb]);
+  const { data: sosStatus } = useRtdb(sosSystemRef);
 
   const handleResolveLocation = useCallback(async (lat: number, lng: number) => {
     setResolvingLocation(true);
@@ -286,6 +291,22 @@ export default function DashboardPage() {
     } else broadcastSOS();
   };
 
+  const handleResetSOS = () => {
+    if (!user || !rtdb) return;
+    update(ref(rtdb, "sosSystem"), {
+      sosTrigger: false,
+      timestamp: Date.now(),
+      sender: currentName,
+      nodename: "System Reset",
+      triggeredByNode: "Web Dashboard"
+    }).then(() => {
+      toast({ title: "System Reset", description: "SOS trigger has been deactivated." });
+    }).catch((err) => {
+      console.error(err);
+      toast({ variant: "destructive", title: "Reset Failed" });
+    });
+  };
+
   if (userLoading || !hasMounted) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -350,9 +371,16 @@ export default function DashboardPage() {
         <div className="max-w-4xl mx-auto">
           {activeTab === 'overview' && (
             <div className="space-y-10">
-              <header className="mb-2">
-                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Demographics: Armed & Active</p>
+              <header className="mb-2 flex justify-between items-start">
+                <div>
+                  <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Demographics: Armed & Active</p>
+                </div>
+                {sosStatus?.sosTrigger && (
+                  <Badge className="bg-destructive text-destructive-foreground animate-pulse px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest">
+                    <ShieldAlert className="h-4 w-4 mr-2" /> SOS ACTIVE
+                  </Badge>
+                )}
               </header>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -368,6 +396,18 @@ export default function DashboardPage() {
                      </CardContent>
                    </Card>
                  ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                {sosStatus?.sosTrigger ? (
+                  <Button onClick={handleResetSOS} variant="outline" className="flex-1 h-14 rounded-none border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground font-bold uppercase tracking-widest text-[10px] gap-2">
+                    <ShieldCheck className="h-4 w-4" /> Deactivate SOS Protocol
+                  </Button>
+                ) : (
+                   <div className="flex-1 h-14 border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                     <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-50">System Nominal / SOS Inactive</p>
+                   </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
