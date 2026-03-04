@@ -291,22 +291,6 @@ export default function DashboardPage() {
     } else broadcastSOS();
   };
 
-  const handleResetSOS = () => {
-    if (!user || !rtdb) return;
-    update(ref(rtdb, "sosSystem"), {
-      sosTrigger: false,
-      timestamp: Date.now(),
-      sender: currentName,
-      nodename: "System Reset",
-      triggeredByNode: "Web Dashboard"
-    }).then(() => {
-      toast({ title: "System Reset", description: "SOS trigger has been deactivated." });
-    }).catch((err) => {
-      console.error(err);
-      toast({ variant: "destructive", title: "Reset Failed" });
-    });
-  };
-
   if (userLoading || !hasMounted) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -399,15 +383,16 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                {sosStatus?.sosTrigger ? (
-                  <Button onClick={handleResetSOS} variant="outline" className="flex-1 h-14 rounded-none border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground font-bold uppercase tracking-widest text-[10px] gap-2">
-                    <ShieldCheck className="h-4 w-4" /> Deactivate SOS Protocol
-                  </Button>
-                ) : (
-                   <div className="flex-1 h-14 border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                 <div className="flex-1 h-14 border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                   {sosStatus?.sosTrigger ? (
+                     <div className="flex items-center gap-2">
+                       <ShieldAlert className="h-4 w-4 text-destructive animate-pulse" />
+                       <p className="text-[10px] uppercase font-bold tracking-widest text-destructive">Emergency Signal Broadcast in Progress</p>
+                     </div>
+                   ) : (
                      <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-50">System Nominal / SOS Inactive</p>
-                   </div>
-                )}
+                   )}
+                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
