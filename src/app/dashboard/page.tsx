@@ -2,7 +2,7 @@
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,14 +40,13 @@ import {
   PlusSquare,
   UserPlus,
   Layers,
-  MapPin,
   Zap,
   PlusCircle,
   Pencil,
   Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ref, set, push, remove, serverTimestamp, update } from "firebase/database";
+import { ref, set, push, remove, update } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell } from "recharts";
@@ -55,9 +54,8 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { reverseGeocode } from "@/ai/flows/reverse-geocode-flow";
 
-type TabType = 'overview' | 'buddies' | 'nodes' | 'location' | 'notifications' | 'settings';
+type TabType = 'overview' | 'buddies' | 'nodes' | 'notifications' | 'settings';
 
 const DEFAULT_BUDDY_GROUPS = ["Family", "Friend", "Close Friend"];
 
@@ -86,11 +84,6 @@ export default function DashboardPage() {
     hardwareId: '',
     targetGroups: [] as string[]
   });
-
-  const [locationData, setLocationData] = useState({ lat: '', lng: '' });
-  const [locationName, setLocationName] = useState<string>("");
-  const [resolvingLocation, setResolvingLocation] = useState(false);
-  const [updatingLocation, setUpdatingLocation] = useState(false);
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
@@ -135,28 +128,6 @@ export default function DashboardPage() {
 
   const sosSystemRef = useMemo(() => ref(rtdb, "sosSystem"), [rtdb]);
   const { data: sosStatus } = useRtdb(sosSystemRef);
-
-  const handleResolveLocation = useCallback(async (lat: number, lng: number) => {
-    setResolvingLocation(true);
-    try {
-      const result = await reverseGeocode({ latitude: lat, longitude: lng });
-      if (result.city) setLocationName(`${result.city}, ${result.province}, ${result.country}`);
-      else setLocationName("Coordinates Locked");
-    } catch (err) {
-      setLocationName("Coordinates Locked");
-    } finally {
-      setResolvingLocation(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (profileData && hasMounted) {
-      const lat = profileData.latitude?.toString() || '';
-      const lng = profileData.longitude?.toString() || '';
-      setLocationData({ lat, lng });
-      if (lat && lng) handleResolveLocation(parseFloat(lat), parseFloat(lng));
-    }
-  }, [profileData, hasMounted, handleResolveLocation]);
 
   const buddyGroups = useMemo(() => {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
@@ -313,7 +284,6 @@ export default function DashboardPage() {
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
     { id: 'buddies', label: 'Manage Buddies', icon: Smartphone },
     { id: 'nodes', label: 'Manage Nodes', icon: Cpu },
-    { id: 'location', label: 'Location Hub', icon: MapPin },
     { id: 'notifications', label: 'Safety Alerts', icon: Bell },
     { id: 'settings', label: 'Settings', icon: Settings },
   ] as const;
@@ -341,7 +311,7 @@ export default function DashboardPage() {
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => setActiveTab(item.id as TabType)}
               className={cn(
                 "w-full flex items-center justify-between px-4 py-3 transition-all",
                 activeTab === item.id ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-muted-foreground"
@@ -516,42 +486,6 @@ export default function DashboardPage() {
                   ))}
                 </div>
               )}
-            </div>
-          )}
-
-          {activeTab === 'location' && (
-            <div className="space-y-10">
-              <Card className="border-none bg-muted/20 rounded-none">
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold">Latitude</Label>
-                      <input value={locationData.lat} onChange={e => setLocationData({...locationData, lat: e.target.value})} className="h-10 w-full rounded-none border-none bg-background px-3 font-mono text-xs focus:ring-1 focus:ring-primary" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold">Longitude</Label>
-                      <input value={locationData.lng} onChange={e => setLocationData({...locationData, lng: e.target.value})} className="h-10 w-full rounded-none border-none bg-background px-3 font-mono text-xs focus:ring-1 focus:ring-primary" />
-                    </div>
-                  </div>
-                  <Button onClick={() => {
-                    if (!user) return;
-                    setUpdatingLocation(true);
-                    set(ref(rtdb, `users/${user.uid}/profile`), { ...profileData, latitude: parseFloat(locationData.lat), longitude: parseFloat(locationData.lng), updatedAt: serverTimestamp() })
-                      .then(() => {
-                        toast({ title: "Coordinates Updated" });
-                        handleResolveLocation(parseFloat(locationData.lat), parseFloat(locationData.lng));
-                      }).finally(() => setUpdatingLocation(false));
-                  }} disabled={updatingLocation} className="w-full rounded-none uppercase font-bold h-12">
-                    {updatingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : "Lock Beacon Coordinates"}
-                  </Button>
-                </CardContent>
-              </Card>
-              <div className="aspect-video bg-muted/10 border-2 border-dashed flex flex-col items-center justify-center p-6 text-center">
-                <MapPin className="h-10 w-10 text-primary mb-4 animate-bounce" />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Visual Tracker Active</p>
-                <p className="text-sm font-bold uppercase">{locationName || "Resolving Precise Location..."}</p>
-                {resolvingLocation && <Loader2 className="h-4 w-4 animate-spin mt-4" />}
-              </div>
             </div>
           )}
 
