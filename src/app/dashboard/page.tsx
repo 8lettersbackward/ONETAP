@@ -49,13 +49,11 @@ import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { PieChart, Pie, Cell } from "recharts";
-import { ChartContainer } from "@/components/ui/chart";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
-type TabType = 'overview' | 'buddies' | 'nodes' | 'notifications' | 'settings';
+type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings';
 
 const DEFAULT_BUDDY_GROUPS = ["Family", "Friend", "Close Friend"];
 
@@ -66,7 +64,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('buddies');
   const [hasMounted, setHasMounted] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
@@ -159,19 +157,6 @@ export default function DashboardPage() {
       .map(([id, val]: [string, any]) => ({ ...val, id }))
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   }, [notificationsData]);
-
-  const statusStats = useMemo(() => {
-    const online = nodes.filter(n => n.status === 'online').length;
-    const offline = nodes.filter(n => n.status === 'offline').length;
-    const error = nodes.filter(n => n.status === 'error').length;
-    return { online, offline, error, total: nodes.length };
-  }, [nodes]);
-
-  const chartData = useMemo(() => [
-    { name: 'Secured', value: statusStats.online, fill: "hsl(var(--primary))" },
-    { name: 'Inactive', value: statusStats.offline, fill: "hsl(var(--muted-foreground))" },
-    { name: 'Alert', value: statusStats.error, fill: "hsl(var(--destructive))" },
-  ], [statusStats]);
 
   const handleRegisterBuddy = (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,7 +266,6 @@ export default function DashboardPage() {
   if (!user) return null;
 
   const navItems = [
-    { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
     { id: 'buddies', label: 'Manage Buddies', icon: Smartphone },
     { id: 'nodes', label: 'Manage Nodes', icon: Cpu },
     { id: 'notifications', label: 'Safety Alerts', icon: Bell },
@@ -328,64 +312,6 @@ export default function DashboardPage() {
 
       <main className="flex-1 p-6 md:p-10 order-2">
         <div className="max-w-4xl mx-auto">
-          {activeTab === 'overview' && (
-            <div className="space-y-10">
-              <header className="mb-2">
-                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Demographics: Armed & Active</p>
-              </header>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                 {[
-                   { label: 'Nodes Armed', count: nodes.length, color: 'bg-primary' },
-                   { label: 'Buddies Linked', count: buddies.length, color: 'bg-muted-foreground' },
-                   { label: 'System Health', count: '100%', color: 'bg-primary' },
-                 ].map((stat) => (
-                   <Card key={stat.label} className="rounded-none border-none bg-muted/20">
-                     <CardContent className="p-6 text-center">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{stat.label}</p>
-                        <p className="text-3xl font-bold font-headline mt-1">{stat.count}</p>
-                     </CardContent>
-                   </Card>
-                 ))}
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Activity className="h-4 w-4" /> Network Pulse</h3>
-                  <div className="aspect-video bg-muted/10 border border-dashed flex items-center justify-center p-4">
-                     {statusStats.total > 0 ? (
-                        <ChartContainer config={{}} className="w-full h-full">
-                           <PieChart>
-                             <Pie data={chartData} innerRadius={40} outerRadius={60} paddingAngle={5} dataKey="value">
-                               {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                             </Pie>
-                           </PieChart>
-                        </ChartContainer>
-                     ) : <p className="text-[10px] uppercase font-bold text-muted-foreground">No Assets Detected</p>}
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><History className="h-4 w-4" /> Activity Stream</h3>
-                  <ScrollArea className="h-[200px] border border-dashed p-4">
-                    {notifications.length === 0 ? (
-                      <p className="text-[8px] uppercase font-mono text-muted-foreground">Logs silent. All protocols nominal.</p>
-                    ) : (
-                      notifications.slice(0, 5).map(n => (
-                        <div key={n.id} className="mb-4 pb-2 border-b border-dashed last:border-0">
-                          <p className="text-[10px] font-bold uppercase">{n.message}</p>
-                          <p className="text-[8px] font-mono text-muted-foreground">
-                            {hasMounted ? new Date(n.createdAt).toLocaleString() : 'Loading...'}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </ScrollArea>
-                </div>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'buddies' && (
             <div className="space-y-6">
               <div className="flex gap-4">
