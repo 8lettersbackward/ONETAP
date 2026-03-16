@@ -3,12 +3,10 @@
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Dialog,
@@ -30,19 +28,16 @@ import {
   Settings, 
   Bell, 
   Cpu, 
-  Activity,
   Smartphone,
   Loader2,
   Trash2,
   LogOut,
-  LayoutDashboard,
-  History,
-  PlusSquare,
   UserPlus,
   Layers,
   Zap,
   PlusCircle,
   Pencil,
+  PlusSquare,
   Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -72,8 +67,6 @@ export default function DashboardPage() {
   const [buddyForm, setBuddyForm] = useState({
     name: '',
     phoneNumber: '',
-    role: 'Primary Emergency Contact',
-    priority: 'High',
     groups: [] as string[]
   });
 
@@ -167,7 +160,7 @@ export default function DashboardPage() {
     set(ref(rtdb, `users/${user.uid}/buddies/${buddyId}`), payload)
       .then(() => {
         setIsAddBuddyDialogOpen(false);
-        setBuddyForm({ name: '', phoneNumber: '', role: 'Primary Emergency Contact', priority: 'High', groups: [] });
+        setBuddyForm({ name: '', phoneNumber: '', groups: [] });
         toast({ title: "Buddy Registered" });
       })
       .finally(() => setRegisterLoading(false));
@@ -233,7 +226,7 @@ export default function DashboardPage() {
       const now = Date.now();
       update(ref(rtdb, "sosSystem"), {
         sosTrigger: true,
-        sender: currentName,
+        sender: user.email || "Unknown",
         nodename: node.nodeName,
         timestamp: now,
         triggeredByNode: node.id,
@@ -339,11 +332,9 @@ export default function DashboardPage() {
                             <p className="text-lg font-bold uppercase">{buddy.name}</p>
                             <p className="text-[10px] font-mono text-muted-foreground">{buddy.phoneNumber}</p>
                           </div>
-                          <Badge variant="outline" className="rounded-none text-[8px] font-bold uppercase">{buddy.priority}</Badge>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Role: {buddy.role}</p>
                         <div className="flex flex-wrap gap-1">
                           {buddy.groups?.map((g: string) => (
                             <Badge key={g} className="rounded-none text-[8px] uppercase font-bold">{g}</Badge>
@@ -472,23 +463,6 @@ export default function DashboardPage() {
               <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
               <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} required className="rounded-none" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Role</Label>
-                <Input value={buddyForm.role} onChange={e => setBuddyForm({...buddyForm, role: e.target.value})} className="rounded-none" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Priority</Label>
-                <Select value={buddyForm.priority} onValueChange={v => setBuddyForm({...buddyForm, priority: v})}>
-                  <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-bold">Protocol Groups</Label>
               <div className="grid grid-cols-2 gap-2 p-2 border border-dashed">
@@ -522,23 +496,6 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
                 <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} required className="rounded-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold">Role</Label>
-                  <Input value={itemToEdit.role} onChange={e => setItemToEdit({...itemToEdit, role: e.target.value})} className="rounded-none" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold">Priority</Label>
-                  <Select value={itemToEdit.priority} onValueChange={v => setItemToEdit({...itemToEdit, priority: v})}>
-                    <SelectTrigger className="rounded-none"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold">Protocol Groups</Label>
@@ -641,16 +598,6 @@ export default function DashboardPage() {
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Asset Identity</p>
                   <p className="text-xl font-bold uppercase">{itemToView.name || itemToView.nodeName}</p>
                   <p className="text-xs font-mono mt-1">{itemToView.phoneNumber || itemToView.hardwareId}</p>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-muted/20 border border-dashed rounded-none">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Status / Priority</p>
-                    <p className="text-sm font-bold uppercase">{itemToView.priority || itemToView.status || 'Active'}</p>
-                  </div>
-                  <div className="p-4 bg-muted/20 border border-dashed rounded-none">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Role / Type</p>
-                    <p className="text-sm font-bold uppercase">{itemToView.role || 'Hardware Node'}</p>
-                  </div>
                </div>
                <div className="p-4 bg-muted/20 border border-dashed rounded-none">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Assigned Protocols</p>

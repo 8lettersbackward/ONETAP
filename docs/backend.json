@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Buddy": {
@@ -9,12 +8,10 @@
         "id": { "type": "string" },
         "name": { "type": "string" },
         "phoneNumber": { "type": "string" },
-        "role": { "type": "string" },
-        "priority": { "type": "string", "enum": ["Low", "Medium", "High"] },
         "groups": { "type": "array", "items": { "type": "string" }, "description": "The protocol groups this buddy belongs to." },
         "registeredAt": { "type": "number" }
       },
-      "required": ["name", "phoneNumber", "priority"]
+      "required": ["name", "phoneNumber"]
     },
     "SecurityGroup": {
       "title": "Security Protocol Group",
@@ -45,11 +42,9 @@
       "type": "object",
       "properties": {
         "sosTrigger": { "type": "boolean", "description": "Binary flag: true if SOS is active, false otherwise." },
-        "trigger": { "type": "boolean", "description": "Legacy trigger flag for specific hardware logic." },
         "sender": { "type": "string" },
         "nodename": { "type": "string" },
         "timestamp": { "type": "number" },
-        "lastWebTrigger": { "type": "number", "description": "Timestamp of the last trigger from the web dashboard." },
         "triggeredByNode": { "type": "string" },
         "latitude": { "type": "number" },
         "longitude": { "type": "number" }
