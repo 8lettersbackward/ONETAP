@@ -65,8 +65,8 @@ export default function LoginPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold tracking-tight uppercase">Sign In</CardTitle>
-            <CardDescription className="text-xs font-bold text-muted-foreground tracking-[0.2em] uppercase mt-2">Verified Personnel Only</CardDescription>
+            <CardTitle className="text-3xl font-bold tracking-tight uppercase">Welcome Back</CardTitle>
+            <CardDescription className="text-xs font-bold text-muted-foreground tracking-[0.2em] uppercase mt-2">Enter credentials to access hub</CardDescription>
           </div>
         </CardHeader>
         <form onSubmit={handleLogin} className="space-y-6">
