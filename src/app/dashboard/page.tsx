@@ -237,10 +237,10 @@ export default function DashboardPage() {
   if (!user) return null;
 
   const navItems = [
-    { id: 'buddies', label: 'Human Assets', icon: Smartphone },
-    { id: 'nodes', label: 'Hardware Hub', icon: Cpu },
-    { id: 'notifications', label: 'History', icon: Bell },
-    { id: 'settings', label: 'Terminal', icon: Settings },
+    { id: 'buddies', label: 'MANAGE BUDDY', icon: Smartphone },
+    { id: 'nodes', label: 'MANAGE NODE', icon: Cpu },
+    { id: 'notifications', label: 'NOTIFICATION', icon: Bell },
+    { id: 'settings', label: 'SETTINGS', icon: Settings },
   ] as const;
 
   return (
@@ -283,7 +283,7 @@ export default function DashboardPage() {
           {activeTab === 'buddies' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter">Human Assets</h1>
+                <h1 className="text-4xl font-bold tracking-tighter">MANAGE BUDDY</h1>
                 <div className="flex gap-4">
                   <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
                     <UserPlus className="h-4 w-4 mr-2" /> Enlist
@@ -332,7 +332,7 @@ export default function DashboardPage() {
           {activeTab === 'nodes' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter">Hardware Hub</h1>
+                <h1 className="text-4xl font-bold tracking-tighter">MANAGE NODE</h1>
                 <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
                   <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
                 </Button>
@@ -382,7 +382,7 @@ export default function DashboardPage() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-10">
-              <h1 className="text-4xl font-bold tracking-tighter">System History</h1>
+              <h1 className="text-4xl font-bold tracking-tighter">NOTIFICATION</h1>
               <Card className="glass-card border-none">
                 <ScrollArea className="h-[600px] p-8">
                   {notifications.length === 0 ? (
@@ -408,7 +408,7 @@ export default function DashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="max-w-md space-y-10">
-              <h1 className="text-4xl font-bold tracking-tighter">Terminal Hub</h1>
+              <h1 className="text-4xl font-bold tracking-tighter">SETTINGS</h1>
               <Card className="glass-card border-none p-10 space-y-8">
                 <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
                   <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Auth Identification</p>
