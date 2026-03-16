@@ -20,7 +20,7 @@ export function Navbar() {
   const currentName = user?.displayName || currentEmailPrefix;
 
   return (
-    <nav className="fixed top-0 w-full z-50 neo-blur border-b border-black/5 h-16 bg-white/80">
+    <nav className="fixed top-0 w-full z-50 neo-blur border-b border-black/5 h-16 bg-white/5">
       <div className="max-w-7xl mx-auto px-6 h-full">
         <div className="flex justify-between h-full items-center">
           <div className="flex-shrink-0">
@@ -39,13 +39,13 @@ export function Navbar() {
                     TERMINAL
                   </Link>
                 </div>
-                <div className="h-6 w-[1px] bg-black/10" />
+                <div className="h-6 w-[1px] bg-white/10" />
                 <Link href="/profile">
-                   <Button variant="ghost" size="icon" className="hover:bg-black/5 text-primary rounded-xl">
+                   <Button variant="ghost" size="icon" className="hover:bg-white/5 text-primary rounded-xl">
                      <UserIcon className="h-5 w-5" />
                    </Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={handleSignOut} className="border-black/10 rounded-2xl text-muted-foreground hover:bg-black/5 text-[10px] font-bold uppercase px-6 h-10 tracking-widest">
+                <Button variant="outline" size="sm" onClick={handleSignOut} className="border-white/10 rounded-2xl text-muted-foreground hover:bg-white/5 text-[10px] font-bold uppercase px-6 h-10 tracking-widest">
                   Log Out
                 </Button>
               </div>
@@ -70,10 +70,10 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden glass-card mx-6 my-4 p-8 space-y-8 rounded-[32px] animate-in fade-in zoom-in-95 duration-200 bg-white">
+        <div className="md:hidden glass-card mx-6 my-4 p-8 space-y-8 rounded-[32px] animate-in fade-in zoom-in-95 duration-200">
           {user ? (
             <>
-              <div className="pb-6 border-b border-black/5">
+              <div className="pb-6 border-b border-white/5">
                 <p className="text-sm font-bold uppercase tracking-widest text-primary">{currentName}</p>
                 <p className="text-[10px] font-mono text-muted-foreground mt-2">{user.email}</p>
               </div>

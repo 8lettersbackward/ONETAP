@@ -118,7 +118,7 @@ export default function ProfilePage() {
       <Button 
         variant="ghost" 
         onClick={() => router.push("/dashboard")} 
-        className="mb-8 p-0 h-auto hover:bg-transparent text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 group transition-all text-accent"
+        className="mb-8 p-0 h-auto hover:bg-transparent text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 group transition-all text-secondary"
       >
         <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-1" />
         Back to Hub
@@ -131,8 +131,8 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
         <aside className="space-y-4">
-          <div className="p-8 border-2 border-dashed border-indigo-900/50 bg-card flex flex-col items-center text-center mb-6 rounded-xl shadow-xl">
-            <Avatar className="h-28 w-28 rounded-none border-2 border-accent mb-4 shadow-[0_0_20px_rgba(76,201,240,0.3)]">
+          <div className="p-8 border-2 border-dashed border-white/10 bg-card flex flex-col items-center text-center mb-6 rounded-xl shadow-xl">
+            <Avatar className="h-28 w-28 rounded-none border-2 border-primary mb-4 shadow-[0_0_20px_rgba(72,149,239,0.3)]">
               <AvatarImage src={avatarUrl} alt={currentDisplayName} />
               <AvatarFallback className="rounded-none bg-primary text-primary-foreground text-3xl font-bold">
                 {currentDisplayName[0].toUpperCase()}
@@ -144,12 +144,12 @@ export default function ProfilePage() {
 
           <nav className="space-y-2">
             <Button variant="ghost" className="w-full justify-start gap-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-bold uppercase text-[10px] tracking-widest shadow-lg">
-              <UserIcon className="h-4 w-4 text-accent" /> Identification
+              <UserIcon className="h-4 w-4" /> Identification
             </Button>
             <Button variant="ghost" className="w-full justify-start gap-3 rounded-md hover:bg-card font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
               <Shield className="h-4 w-4" /> Security
             </Button>
-            <Separator className="my-6 border-indigo-900/50" />
+            <Separator className="my-6 border-white/10" />
             <Button variant="ghost" className="w-full justify-start gap-3 rounded-md text-destructive hover:bg-destructive/10 font-bold uppercase text-[10px] tracking-widest" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" /> Terminate Session
             </Button>
@@ -158,8 +158,8 @@ export default function ProfilePage() {
 
         <div className="md:col-span-2 space-y-10">
           <Card className="border-none shadow-2xl bg-card rounded-xl">
-            <CardHeader className="border-b border-indigo-900/50">
-              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-accent">Identification Profile</CardTitle>
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-secondary">Identification Profile</CardTitle>
               <CardDescription className="text-[10px] uppercase text-muted-foreground">Core system identity settings.</CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdateProfile}>
@@ -169,13 +169,13 @@ export default function ProfilePage() {
                     <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                       <IdCard className="h-3 w-3" /> Unique ID
                     </Label>
-                    <Input value={user.uid} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-accent opacity-70" />
+                    <Input value={user.uid} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-secondary opacity-70" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                       <Mail className="h-3 w-3" /> Master Email
                     </Label>
-                    <Input value={user.email || ""} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-accent opacity-70" />
+                    <Input value={user.email || ""} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-secondary opacity-70" />
                   </div>
                 </div>
 
@@ -186,7 +186,7 @@ export default function ProfilePage() {
                     placeholder="e.g. ALPHA-1" 
                     value={displayName} 
                     onChange={(e) => setDisplayName(e.target.value)} 
-                    className="bg-background border-border focus:border-secondary h-14 uppercase text-sm font-bold tracking-widest"
+                    className="bg-background border-white/10 focus:border-primary h-14 uppercase text-sm font-bold tracking-widest"
                   />
                   <p className="text-[8px] text-muted-foreground uppercase">This name will be displayed across your terminal hub.</p>
                 </div>
@@ -200,11 +200,11 @@ export default function ProfilePage() {
                     placeholder="https://..." 
                     value={avatarUrl} 
                     onChange={(e) => setAvatarUrl(e.target.value)} 
-                    className="bg-background border-border focus:border-secondary h-14 text-[10px] font-mono"
+                    className="bg-background border-white/10 focus:border-primary h-14 text-[10px] font-mono"
                   />
                 </div>
               </CardContent>
-              <CardFooter className="pt-6 border-t border-indigo-900/50">
+              <CardFooter className="pt-6 border-t border-white/10">
                 <Button type="submit" disabled={updating} className="w-full h-16 bg-primary hover:bg-secondary uppercase font-bold tracking-[0.3em] text-xs shadow-2xl">
                   {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Synchronize Profile"}
                 </Button>
@@ -213,8 +213,8 @@ export default function ProfilePage() {
           </Card>
 
           <Card className="border-none shadow-2xl bg-card rounded-xl">
-            <CardHeader className="border-b border-indigo-900/50">
-              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-accent">Security Protocol</CardTitle>
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-secondary">Security Protocol</CardTitle>
               <CardDescription className="text-[10px] uppercase text-muted-foreground">Rotate your access credentials.</CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdatePassword}>
@@ -227,12 +227,12 @@ export default function ProfilePage() {
                     placeholder="••••••••"
                     value={newPassword} 
                     onChange={(e) => setNewPassword(e.target.value)} 
-                    className="bg-background border-border focus:border-secondary h-14"
+                    className="bg-background border-white/10 focus:border-primary h-14"
                   />
                 </div>
               </CardContent>
-              <CardFooter className="pt-6 border-t border-indigo-900/50">
-                <Button type="submit" variant="outline" disabled={updating || !newPassword} className="w-full h-14 border-secondary text-secondary hover:bg-secondary/10 uppercase font-bold tracking-[0.2em] text-[10px]">
+              <CardFooter className="pt-6 border-t border-white/10">
+                <Button type="submit" variant="outline" disabled={updating || !newPassword} className="w-full h-14 border-primary text-primary hover:bg-primary/10 uppercase font-bold tracking-[0.2em] text-[10px]">
                   Rotate Access Keys
                 </Button>
               </CardFooter>
