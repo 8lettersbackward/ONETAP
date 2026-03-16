@@ -38,7 +38,8 @@ import {
   PlusCircle,
   Pencil,
   PlusSquare,
-  Eye
+  Eye,
+  Eraser
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update } from "firebase/database";
@@ -143,6 +144,13 @@ export default function DashboardPage() {
       message,
       createdAt: Date.now(),
       type: 'system_log'
+    });
+  };
+
+  const handleClearNotifications = () => {
+    if (!user || !rtdb) return;
+    remove(ref(rtdb, `users/${user.uid}/notifications`)).then(() => {
+      toast({ title: "Vault Purged", description: "All notifications have been cleared." });
     });
   };
 
@@ -260,7 +268,7 @@ export default function DashboardPage() {
   ] as const;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-background">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
       <aside className="w-full md:w-64 bg-black/20 border-r border-white/10 p-6 md:h-screen sticky top-0">
         <div className="space-y-12">
           <div className="flex items-center gap-4">
@@ -399,7 +407,18 @@ export default function DashboardPage() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-10">
-              <h1 className="text-4xl font-bold tracking-tighter">NOTIFICATION</h1>
+              <div className="flex items-center justify-between">
+                <h1 className="text-4xl font-bold tracking-tighter">NOTIFICATION</h1>
+                {notifications.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleClearNotifications} 
+                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-white/10 hover:bg-destructive/10 text-destructive"
+                  >
+                    <Eraser className="h-4 w-4 mr-2" /> Clear Vault
+                  </Button>
+                )}
+              </div>
               <Card className="glass-card border-none">
                 <ScrollArea className="h-[600px] p-8">
                   {notifications.length === 0 ? (
