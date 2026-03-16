@@ -318,6 +318,7 @@ export default function DashboardPage() {
                       </CardHeader>
                       <CardContent className="p-8 pt-0">
                         <div className="flex gap-4 pt-6 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-white/10" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-primary" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
@@ -571,8 +572,14 @@ export default function DashboardPage() {
                   <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Descriptor</span>
                   <span className="text-sm font-bold">{itemToView.nodeName || itemToView.name}</span>
                 </div>
+                {itemToView.phoneNumber && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Comms Path</span>
+                    <span className="text-[10px] font-mono text-secondary">{itemToView.phoneNumber}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Hardware ID</span>
+                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">{itemToView.hardwareId ? 'Hardware ID' : 'Internal ID'}</span>
                   <span className="text-[10px] font-mono text-secondary">{itemToView.hardwareId || itemToView.id}</span>
                 </div>
                 <div className="flex justify-between items-center">
