@@ -52,12 +52,12 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
             <Link href="/signup">
               <Button size="lg" className="px-12 h-16 text-sm font-bold uppercase bg-primary hover:bg-secondary rounded-2xl tracking-[0.2em] shadow-lg">
-                Secure Identity <ArrowRight className="ml-3 h-5 w-5" />
+                SECURE MY LIFE <ArrowRight className="ml-3 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/login">
               <Button size="lg" variant="ghost" className="glass-card px-12 h-16 text-sm font-bold uppercase rounded-2xl border-white/20 text-white tracking-[0.2em] hover:bg-white/10">
-                Access Terminal
+                SIGN IN
               </Button>
             </Link>
           </div>
