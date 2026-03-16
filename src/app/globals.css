@@ -1,28 +1,27 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 246 87% 23%;
+    --background: 230 84% 5%;
     --foreground: 210 40% 98%;
-    --card: 235 61% 43%;
+    --card: 230 84% 8%;
     --card-foreground: 210 40% 98%;
-    --popover: 235 61% 43%;
+    --popover: 230 84% 8%;
     --popover-foreground: 210 40% 98%;
     --primary: 230 84% 60%;
     --primary-foreground: 210 40% 98%;
     --secondary: 212 85% 61%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 246 87% 30%;
-    --muted-foreground: 230 80% 95%;
+    --muted: 230 84% 15%;
+    --muted-foreground: 215 20% 65%;
     --accent: 194 86% 62%;
-    --accent-foreground: 246 87% 23%;
+    --accent-foreground: 230 84% 5%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 235 61% 50%;
-    --input: 246 87% 15%;
+    --border: 230 84% 15%;
+    --input: 230 84% 12%;
     --ring: 230 84% 60%;
     --radius: 1rem;
   }
@@ -39,9 +38,9 @@
 }
 
 .glass-card {
-  @apply backdrop-blur-xl bg-card/20 border border-white/10 shadow-lg;
+  @apply backdrop-blur-xl bg-card/40 border border-white/5 shadow-2xl;
 }
 
 .neo-blur {
-  @apply backdrop-blur-2xl bg-background/80;
+  @apply backdrop-blur-2xl bg-background/90;
 }
