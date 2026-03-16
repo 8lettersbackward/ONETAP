@@ -20,13 +20,13 @@ export function Navbar() {
   const currentName = user?.displayName || currentEmailPrefix;
 
   return (
-    <nav className="fixed top-0 w-full z-50 neo-blur border-b border-white/5 h-16">
+    <nav className="fixed top-0 w-full z-50 neo-blur border-b border-black/5 h-16 bg-white/80">
       <div className="max-w-7xl mx-auto px-6 h-full">
         <div className="flex justify-between h-full items-center">
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center gap-3 text-accent group">
+            <Link href="/" className="flex items-center gap-3 text-primary group">
               <Hexagon className="h-7 w-7 transition-transform group-hover:rotate-45" fill="currentColor" fillOpacity={0.2} />
-              <span className="font-bold tracking-tighter text-2xl uppercase text-white">1TAP</span>
+              <span className="font-bold tracking-tighter text-2xl uppercase text-foreground">1TAP</span>
             </Link>
           </div>
           
@@ -34,35 +34,35 @@ export function Navbar() {
             {user ? (
               <div className="flex items-center space-x-8">
                 <div className="flex flex-col items-end">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-accent leading-none mb-1">{currentName}</span>
-                   <Link href="/dashboard" className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors">
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary leading-none mb-1">{currentName}</span>
+                   <Link href="/dashboard" className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors">
                     TERMINAL
                   </Link>
                 </div>
-                <div className="h-6 w-[1px] bg-white/10" />
+                <div className="h-6 w-[1px] bg-black/10" />
                 <Link href="/profile">
-                   <Button variant="ghost" size="icon" className="hover:bg-white/5 text-accent rounded-xl">
+                   <Button variant="ghost" size="icon" className="hover:bg-black/5 text-primary rounded-xl">
                      <UserIcon className="h-5 w-5" />
                    </Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={handleSignOut} className="border-white/10 rounded-2xl text-muted-foreground hover:bg-white/5 text-[10px] font-bold uppercase px-6 h-10 tracking-widest">
+                <Button variant="outline" size="sm" onClick={handleSignOut} className="border-black/10 rounded-2xl text-muted-foreground hover:bg-black/5 text-[10px] font-bold uppercase px-6 h-10 tracking-widest">
                   Log Out
                 </Button>
               </div>
             ) : (
               <div className="flex items-center space-x-8">
                 <Link href="/login">
-                  <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-transparent">Sign In</Button>
+                  <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-transparent">Sign In</Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="bg-primary hover:bg-secondary text-[10px] font-bold uppercase px-10 h-11 rounded-2xl tracking-[0.2em] shadow-xl shadow-primary/20">Get Started</Button>
+                  <Button className="bg-primary hover:bg-secondary text-[10px] font-bold uppercase px-10 h-11 rounded-2xl tracking-[0.2em] shadow-lg">Get Started</Button>
                 </Link>
               </div>
             )}
           </div>
 
           <div className="md:hidden flex items-center">
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-foreground">
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
@@ -70,21 +70,21 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden glass-card mx-6 my-4 p-8 space-y-8 rounded-[32px] animate-in fade-in zoom-in-95 duration-200">
+        <div className="md:hidden glass-card mx-6 my-4 p-8 space-y-8 rounded-[32px] animate-in fade-in zoom-in-95 duration-200 bg-white">
           {user ? (
             <>
-              <div className="pb-6 border-b border-white/5">
-                <p className="text-sm font-bold uppercase tracking-widest text-accent">{currentName}</p>
+              <div className="pb-6 border-b border-black/5">
+                <p className="text-sm font-bold uppercase tracking-widest text-primary">{currentName}</p>
                 <p className="text-[10px] font-mono text-muted-foreground mt-2">{user.email}</p>
               </div>
-              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-white">TERMINAL</Link>
-              <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-white">PROFILE</Link>
+              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">TERMINAL</Link>
+              <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">PROFILE</Link>
               <button onClick={handleSignOut} className="w-full text-left text-xs font-bold uppercase tracking-[0.3em] text-destructive">TERMINATE SESSION</button>
             </>
           ) : (
             <>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-white">SIGN IN</Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-accent">GET STARTED</Link>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">SIGN IN</Link>
+              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-primary">GET STARTED</Link>
             </>
           )}
         </div>
