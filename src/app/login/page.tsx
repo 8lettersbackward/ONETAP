@@ -60,7 +60,7 @@ export default function LoginPage() {
       <Card className="glass-card w-full max-w-md border-none rounded-[32px] p-8 space-y-8 relative z-10">
         <CardHeader className="space-y-4 text-center p-0">
           <div className="flex justify-center">
-            <div className="h-16 w-16 bg-primary/20 rounded-2xl flex items-center justify-center border border-white/20">
+            <div className="h-16 w-16 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/20">
               <ShieldCheck className="h-8 w-8 text-secondary" />
             </div>
           </div>
@@ -80,7 +80,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-14 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-white/20"
+                className="h-14 bg-primary/5 border-primary/10 rounded-2xl text-foreground placeholder:text-muted-foreground/40"
               />
             </div>
             <div className="space-y-2">
@@ -94,12 +94,12 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-14 bg-white/5 border-white/10 rounded-2xl text-white"
+                className="h-14 bg-primary/5 border-primary/10 rounded-2xl text-foreground"
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-6 p-0">
-            <Button type="submit" className="w-full h-16 rounded-2xl text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-[0.2em] shadow-lg" disabled={loading}>
+            <Button type="submit" className="w-full h-16 rounded-2xl text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-[0.2em] shadow-lg shadow-primary/20 text-white" disabled={loading}>
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
             </Button>
             <p className="text-xs text-center text-muted-foreground font-bold uppercase tracking-widest">

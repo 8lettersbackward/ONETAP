@@ -35,13 +35,12 @@ import {
   LogOut,
   UserPlus,
   Layers,
-  Zap,
-  PlusCircle,
-  Pencil,
   PlusSquare,
   Eye,
   Eraser,
-  Thermometer
+  Thermometer,
+  Pencil,
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update } from "firebase/database";
@@ -114,9 +113,6 @@ export default function DashboardPage() {
 
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
-
-  const sosSystemRef = useMemo(() => ref(rtdb, "sosSystem"), [rtdb]);
-  const { data: sosStatus } = useRtdb(sosSystemRef);
 
   const buddyGroups = useMemo(() => {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
@@ -244,11 +240,11 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
-      <aside className="w-full md:w-64 bg-black/20 border-r border-white/10 p-6 md:h-screen sticky top-0">
+      <aside className="w-full md:w-64 bg-white/50 border-r border-primary/10 p-6 md:h-screen sticky top-0 backdrop-blur-md">
         <div className="space-y-12">
           <div className="flex items-center gap-4">
             <Avatar className="h-10 w-10 border-2 border-primary">
-              <AvatarFallback className="bg-primary/20 text-white font-bold">
+              <AvatarFallback className="bg-primary/20 text-primary font-bold">
                 {currentName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -265,8 +261,8 @@ export default function DashboardPage() {
                 className={cn(
                   "w-full flex items-center gap-4 px-4 py-3.5 transition-all rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em]",
                   activeTab === item.id 
-                    ? "bg-primary text-white shadow-lg" 
-                    : "hover:bg-white/10 text-muted-foreground"
+                    ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                    : "hover:bg-primary/5 text-muted-foreground"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -277,24 +273,24 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-16 overflow-y-auto bg-background/50">
+      <main className="flex-1 p-6 md:p-16 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           {activeTab === 'buddies' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-white">MANAGE BUDDY</h1>
+                <h1 className="text-4xl font-bold tracking-tighter">MANAGE BUDDY</h1>
                 <div className="flex gap-4">
                   <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
                     <UserPlus className="h-4 w-4 mr-2" /> Enlist
                   </Button>
-                  <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border-white/20 hover:bg-white/10">
+                  <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border-primary/20 hover:bg-primary/5">
                     <Layers className="h-4 w-4 mr-2" /> Protocols
                   </Button>
                 </div>
               </div>
 
               {buddies.length === 0 ? (
-                <Card className="glass-card p-24 text-center border-dashed border-primary/20">
+                <Card className="glass-card p-24 text-center border-dashed border-primary/40 bg-white/40">
                   <Smartphone className="h-12 w-12 text-primary/20 mx-auto mb-6" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Standby Mode: No Registered Buddies</p>
                 </Card>
@@ -311,14 +307,14 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {buddy.groups?.map((g: string) => (
-                            <Badge key={g} variant="outline" className="text-[9px] border-secondary/40 text-secondary uppercase font-bold px-3">{g}</Badge>
+                            <Badge key={g} variant="outline" className="text-[9px] border-secondary/40 text-secondary uppercase font-bold px-3 bg-secondary/5">{g}</Badge>
                           ))}
                         </div>
                       </CardHeader>
                       <CardContent className="p-8 pt-0">
-                        <div className="flex gap-4 pt-6 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-white/10" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-primary" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                        <div className="flex gap-4 pt-6 border-t border-primary/10 opacity-0 group-hover:opacity-100 transition-all">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary/10" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary text-white" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -332,14 +328,14 @@ export default function DashboardPage() {
           {activeTab === 'nodes' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-white">MANAGE NODE</h1>
+                <h1 className="text-4xl font-bold tracking-tighter">MANAGE NODE</h1>
                 <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
                   <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
                 </Button>
               </div>
 
               {nodes.length === 0 ? (
-                <Card className="glass-card p-24 text-center border-dashed border-primary/20">
+                <Card className="glass-card p-24 text-center border-dashed border-primary/40 bg-white/40">
                   <Cpu className="h-12 w-12 text-primary/20 mx-auto mb-6" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Systems Offline: No Active Nodes</p>
                 </Card>
@@ -357,7 +353,7 @@ export default function DashboardPage() {
                       <CardContent className="p-8 pt-0 space-y-6">
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
-                            <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 flex items-center gap-2"><Thermometer className="h-3 w-3" /> Thermal Threshold</Label>
+                            <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 flex items-center gap-2"><Thermometer className="h-3 w-3" /> Thermal Threshold</Label>
                             <span className="text-[10px] font-mono font-bold text-secondary">{node.temperature || 24}°C</span>
                           </div>
                           <Slider 
@@ -371,12 +367,12 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {node.targetGroups?.map((g: string) => (
-                            <Badge key={g} className="bg-primary/20 border-none text-white text-[9px] uppercase font-bold px-3">{g}</Badge>
+                            <Badge key={g} className="bg-primary/10 border-none text-primary text-[9px] uppercase font-bold px-3">{g}</Badge>
                           ))}
                         </div>
-                        <div className="flex gap-4 pt-6 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-white/10" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-white/10" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                        <div className="flex gap-4 pt-6 border-t border-primary/10 opacity-0 group-hover:opacity-100 transition-all">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary/10" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary text-white" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -390,12 +386,12 @@ export default function DashboardPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-white">NOTIFICATION</h1>
+                <h1 className="text-4xl font-bold tracking-tighter">NOTIFICATION</h1>
                 {notifications.length > 0 && (
                   <Button 
                     variant="ghost" 
                     onClick={handleClearNotifications} 
-                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-white/10 hover:bg-destructive/10 text-destructive"
+                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-primary/10 hover:bg-destructive/10 text-destructive"
                   >
                     <Eraser className="h-4 w-4 mr-2" /> Clear Vault
                   </Button>
@@ -410,10 +406,10 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className="mb-8 pb-8 border-b border-white/5 last:border-0 last:mb-0">
+                      <div key={n.id} className="mb-8 pb-8 border-b border-primary/5 last:border-0 last:mb-0">
                         <div className="flex justify-between items-start mb-3">
                           <p className="text-md font-bold tracking-wide">{n.message}</p>
-                          <Badge variant="outline" className="text-[9px] border-secondary/40 text-secondary font-bold px-3">{new Date(n.createdAt).toLocaleTimeString()}</Badge>
+                          <Badge variant="outline" className="text-[9px] border-secondary/40 text-secondary font-bold px-3 bg-secondary/5">{new Date(n.createdAt).toLocaleTimeString()}</Badge>
                         </div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{new Date(n.createdAt).toLocaleDateString()}</p>
                       </div>
@@ -426,13 +422,13 @@ export default function DashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="max-w-md space-y-10">
-              <h1 className="text-4xl font-bold tracking-tighter text-white">SETTINGS</h1>
+              <h1 className="text-4xl font-bold tracking-tighter">SETTINGS</h1>
               <Card className="glass-card border-none p-10 space-y-8">
-                <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
+                <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
                   <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Auth Identification</p>
-                  <p className="text-[10px] font-mono opacity-40 truncate">{user.uid}</p>
+                  <p className="text-[10px] font-mono opacity-60 truncate">{user.uid}</p>
                 </div>
-                <Button variant="destructive" onClick={() => signOut(auth).then(() => router.push("/login"))} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] shadow-lg">
+                <Button variant="destructive" onClick={() => signOut(auth).then(() => router.push("/login"))} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] shadow-lg shadow-destructive/20">
                   <LogOut className="h-4 w-4 mr-3" /> Terminate Session
                 </Button>
               </Card>
@@ -446,22 +442,22 @@ export default function DashboardPage() {
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Enlist Buddy</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterBuddy} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Full Name</Label>
-              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
+              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Phone Number</Label>
-              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Protocol Groups</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
+              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
                 {buddyGroups.map(g => (
                   <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
                       const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
                       setBuddyForm({...buddyForm, groups: updated});
-                    }} className="rounded-md border-white/20 data-[state=checked]:bg-primary" />
+                    }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
                   </div>
                 ))}
@@ -480,23 +476,23 @@ export default function DashboardPage() {
           {itemToEdit && (
             <form onSubmit={handleUpdateBuddy} className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Full Name</Label>
-                <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
+                <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Phone Number</Label>
-                <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+                <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Protocol Groups</Label>
-                <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
+                <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
                   {buddyGroups.map(g => (
                     <div key={g} className="flex items-center gap-3">
                       <Checkbox checked={itemToEdit.groups?.includes(g)} onCheckedChange={() => {
                         const groups = itemToEdit.groups || [];
                         const updated = groups.includes(g) ? groups.filter((x: string) => x !== g) : [...groups, g];
                         setItemToEdit({...itemToEdit, groups: updated});
-                      }} className="rounded-md border-white/20 data-[state=checked]:bg-primary" />
+                      }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
                       <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
                     </div>
                   ))}
@@ -515,26 +511,26 @@ export default function DashboardPage() {
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm Node</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterNode} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Name</Label>
-              <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Node Name</Label>
+              <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Hardware ID</Label>
-              <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-mono" required />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID</Label>
+              <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Initial Thermal Threshold (°C)</Label>
-              <Input type="number" value={nodeForm.temperature} onChange={e => setNodeForm({...nodeForm, temperature: parseInt(e.target.value)})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Initial Thermal Threshold (°C)</Label>
+              <Input type="number" value={nodeForm.temperature} onChange={e => setNodeForm({...nodeForm, temperature: parseInt(e.target.value)})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Broadcast Targets</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Broadcast Targets</Label>
+              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
                 {buddyGroups.map(g => (
                   <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={nodeForm.targetGroups.includes(g)} onCheckedChange={() => {
                       const updated = nodeForm.targetGroups.includes(g) ? nodeForm.targetGroups.filter(x => x !== g) : [...nodeForm.targetGroups, g];
                       setNodeForm({...nodeForm, targetGroups: updated});
-                    }} className="rounded-md border-white/20 data-[state=checked]:bg-primary" />
+                    }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
                   </div>
                 ))}
@@ -553,27 +549,27 @@ export default function DashboardPage() {
           {itemToEdit && (
             <form onSubmit={handleUpdateNode} className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Name</Label>
-                <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Node Name</Label>
+                <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Hardware ID</Label>
-                <Input value={itemToEdit.hardwareId} onChange={e => setItemToEdit({...itemToEdit, hardwareId: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-mono" required />
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID</Label>
+                <Input value={itemToEdit.hardwareId} onChange={e => setItemToEdit({...itemToEdit, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Thermal Threshold (°C)</Label>
-                <Input type="number" value={itemToEdit.temperature} onChange={e => setItemToEdit({...itemToEdit, temperature: parseInt(e.target.value)})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" />
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Thermal Threshold (°C)</Label>
+                <Input type="number" value={itemToEdit.temperature} onChange={e => setItemToEdit({...itemToEdit, temperature: parseInt(e.target.value)})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Broadcast Targets</Label>
-                <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Broadcast Targets</Label>
+                <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
                   {buddyGroups.map(g => (
                     <div key={g} className="flex items-center gap-3">
                       <Checkbox checked={itemToEdit.targetGroups?.includes(g)} onCheckedChange={() => {
                         const targets = itemToEdit.targetGroups || [];
                         const updated = targets.includes(g) ? targets.filter((x: string) => x !== g) : [...targets, g];
                         setItemToEdit({...itemToEdit, targetGroups: updated});
-                      }} className="rounded-md border-white/20 data-[state=checked]:bg-primary" />
+                      }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
                       <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
                     </div>
                   ))}
@@ -592,7 +588,7 @@ export default function DashboardPage() {
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Asset Overview</DialogTitle></DialogHeader>
           {itemToView && (
             <div className="space-y-8">
-              <div className="p-8 bg-white/5 rounded-3xl border border-white/5 space-y-4">
+              <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Descriptor</span>
                   <span className="text-sm font-bold">{itemToView.nodeName || itemToView.name}</span>
@@ -622,11 +618,11 @@ export default function DashboardPage() {
                   <span className="text-[10px] opacity-60 font-bold">{new Date(itemToView.registeredAt).toLocaleString()}</span>
                 </div>
               </div>
-              <div className="p-8 bg-white/5 rounded-3xl border border-white/5">
+              <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary mb-6">Authorized Protocols</p>
                 <div className="flex flex-wrap gap-2">
                   {(itemToView.targetGroups || itemToView.groups || []).map((g: string) => (
-                    <Badge key={g} variant="outline" className="bg-white/10 border-white/10 text-[9px] px-4 py-1.5 opacity-80 uppercase font-bold">{g}</Badge>
+                    <Badge key={g} variant="outline" className="bg-white/50 border-primary/10 text-[9px] px-4 py-1.5 opacity-80 uppercase font-bold text-primary">{g}</Badge>
                   ))}
                   {(itemToView.targetGroups || itemToView.groups || []).length === 0 && <p className="text-[10px] opacity-20 uppercase font-bold tracking-widest">Zero active protocols</p>}
                 </div>
@@ -641,7 +637,7 @@ export default function DashboardPage() {
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Safety Protocols</DialogTitle></DialogHeader>
           <div className="space-y-8">
             <div className="flex gap-3">
-              <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Protocol Name" className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold uppercase tracking-widest" />
+              <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Protocol Name" className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold uppercase tracking-widest" />
               <Button onClick={() => {
                 if (!user || !newGroupName) return;
                 push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name: newGroupName });
@@ -652,7 +648,7 @@ export default function DashboardPage() {
             <ScrollArea className="h-64 pr-4">
               <div className="space-y-3">
                 {buddyGroups.map(g => (
-                  <div key={g} className="p-5 bg-white/5 rounded-2xl flex justify-between items-center group/item hover:bg-white/10 transition-all border border-transparent">
+                  <div key={g} className="p-5 bg-primary/5 rounded-2xl flex justify-between items-center group/item hover:bg-primary/10 transition-all border border-transparent">
                     <span className="text-[10px] font-bold uppercase tracking-widest">{g}</span>
                     {!DEFAULT_BUDDY_GROUPS.includes(g) && (
                       <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover/item:opacity-100" onClick={() => {
@@ -678,7 +674,7 @@ export default function DashboardPage() {
             <AlertDialogDescription className="text-sm font-medium leading-relaxed">This asset will be permanently erased from the terminal hub and protocol networks.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-4">
-            <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 border-white/10">Abort</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 border-primary/10">Abort</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               if (!user || !itemToDelete) return;
               const path = itemToDelete.type === 'buddy' ? `users/${user.uid}/buddies/${itemToDelete.id}` : `users/${user.uid}/nodes/${itemToDelete.id}`;
