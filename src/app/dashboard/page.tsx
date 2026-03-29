@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,15 +42,23 @@ import {
   Eraser,
   Thermometer,
   Pencil,
-  PlusCircle
+  PlusCircle,
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ref, set, push, remove, update } from "firebase/database";
+import { ref, set, push, remove, update, onChildAdded, off } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+
+// Dynamic import for Leaflet components to avoid SSR issues
+const SOSMap = dynamic(() => import("./sos-map"), { 
+  ssr: false,
+  loading: () => <div className="h-[420px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40">Initializing Tactical Map...</div>
+});
 
 type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings';
 
@@ -90,6 +100,11 @@ export default function DashboardPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
+  // SOS States
+  const [activeSosAlert, setActiveSosAlert] = useState<any>(null);
+  const [isSosMapOpen, setIsSosMapOpen] = useState(false);
+  const lastProcessedSosRef = useRef<string | null>(null);
+
   const currentName = useMemo(() => {
     if (!user?.email) return "User";
     return user.email.split('@')[0];
@@ -114,6 +129,30 @@ export default function DashboardPage() {
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
 
+  // Real-time SOS listener for automated popups
+  useEffect(() => {
+    if (!user || !rtdb) return;
+
+    const queryRef = ref(rtdb, `users/${user.uid}/notifications`);
+    
+    // Use onChildAdded to catch new alerts as they arrive
+    const unsubscribe = onChildAdded(queryRef, (snapshot) => {
+      const alert = snapshot.val();
+      const alertId = snapshot.key;
+
+      if (alert && alert.type === "sos" && alertId !== lastProcessedSosRef.current) {
+        lastProcessedSosRef.current = alertId;
+        // Only trigger popup if alert is recent (within last 30 seconds)
+        if (Date.now() - (alert.createdAt || 0) < 30000) {
+          setActiveSosAlert({ ...alert, id: alertId });
+          setIsSosMapOpen(true);
+        }
+      }
+    });
+
+    return () => off(queryRef, "child_added", unsubscribe);
+  }, [user, rtdb]);
+
   const buddyGroups = useMemo(() => {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
     return Array.from(new Set([...DEFAULT_BUDDY_GROUPS, ...customNames]));
@@ -136,20 +175,20 @@ export default function DashboardPage() {
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   }, [notificationsData]);
 
-  const logAction = (message: string) => {
+  const logAction = (message: string, type: string = 'system_log') => {
     if (!user || !rtdb) return;
     const notificationRef = ref(rtdb, `users/${user.uid}/notifications`);
     push(notificationRef, {
       message,
       createdAt: Date.now(),
-      type: 'system_log'
+      type
     });
   };
 
   const handleClearNotifications = () => {
     if (!user || !rtdb) return;
     remove(ref(rtdb, `users/${user.uid}/notifications`)).then(() => {
-      toast({ title: "Vault Purged", description: "All notifications have been cleared." });
+      toast({ title: "Vault Purged", description: "All activity logs have been cleared." });
     });
   };
 
@@ -164,7 +203,7 @@ export default function DashboardPage() {
         logAction(`Enlisted new buddy: ${buddyForm.name}`);
         setIsAddBuddyDialogOpen(false);
         setBuddyForm({ name: '', phoneNumber: '', groups: [] });
-        toast({ title: "Buddy Registered" });
+        toast({ title: "Buddy Enlisted" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -292,7 +331,7 @@ export default function DashboardPage() {
               {buddies.length === 0 ? (
                 <Card className="glass-card p-24 text-center border-dashed border-primary/40 bg-white/40">
                   <Smartphone className="h-12 w-12 text-primary/20 mx-auto mb-6" />
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Standby Mode: No Registered Buddies</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Standby Mode: No Enlisted Buddies</p>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -406,12 +445,26 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className="mb-8 pb-8 border-b border-primary/5 last:border-0 last:mb-0">
+                      <div key={n.id} className={cn("mb-8 pb-8 border-b border-primary/5 last:border-0 last:mb-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl")}>
                         <div className="flex justify-between items-start mb-3">
-                          <p className="text-md font-bold tracking-wide">{n.message}</p>
-                          <Badge variant="outline" className="text-[9px] border-secondary/40 text-secondary font-bold px-3 bg-secondary/5">{new Date(n.createdAt).toLocaleTimeString()}</Badge>
+                          <div className="flex gap-4 items-center">
+                            {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />}
+                            <p className={cn("text-md font-bold tracking-wide", n.type === 'sos' && "text-destructive uppercase")}>
+                              {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={cn("text-[9px] font-bold px-3 bg-white/50", n.type === 'sos' ? "border-destructive/40 text-destructive" : "border-secondary/40 text-secondary")}>
+                            {new Date(n.createdAt).toLocaleTimeString()}
+                          </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{new Date(n.createdAt).toLocaleDateString()}</p>
+                        {n.type === 'sos' && (
+                          <div className="space-y-4 mb-4 ml-9">
+                            <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>
+                            <p className="text-xs font-medium opacity-60 flex items-center gap-2"><MapPin className="h-3 w-3" /> {n.place || 'Location Coordinates Acquired'}</p>
+                            <Button size="sm" onClick={() => { setActiveSosAlert(n); setIsSosMapOpen(true); }} className="h-8 rounded-lg bg-destructive text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-destructive/20 text-white">View on Map</Button>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold ml-9">{new Date(n.createdAt).toLocaleDateString()}</p>
                       </div>
                     ))
                   )}
@@ -436,6 +489,55 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* SOS Map Modal */}
+      <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
+        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
+          <div className="p-10 border-b border-destructive/5 bg-destructive/5">
+             <div className="flex justify-between items-center">
+               <div className="flex items-center gap-4">
+                  <AlertTriangle className="h-8 w-8 text-destructive animate-bounce" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-destructive uppercase tracking-tighter">Tactical SOS Intercept</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Master Signal: {activeSosAlert?.nodeName || 'Hardware Node'}</p>
+                  </div>
+               </div>
+               <Badge className="bg-destructive text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl animate-pulse">Critical Alert</Badge>
+             </div>
+          </div>
+          <div className="p-10 space-y-8">
+            <div className="grid grid-cols-2 gap-8">
+               <div className="space-y-2">
+                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
+                 <p className="text-sm font-bold text-destructive">{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
+               </div>
+               <div className="space-y-2">
+                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Timestamp</Label>
+                 <p className="text-sm font-bold">{activeSosAlert?.createdAt ? new Date(activeSosAlert.createdAt).toLocaleString() : 'N/A'}</p>
+               </div>
+            </div>
+            
+            <div className="relative rounded-2xl overflow-hidden border border-destructive/10 shadow-inner">
+               <SOSMap 
+                  latitude={activeSosAlert?.latitude || 0} 
+                  longitude={activeSosAlert?.longitude || 0}
+                  label={activeSosAlert?.nodeName}
+               />
+               <div className="absolute bottom-6 left-6 right-6 z-[1000] glass-card p-4 rounded-xl flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-destructive" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest flex-1">{activeSosAlert?.place || 'Coordinates Identified'}</p>
+               </div>
+            </div>
+
+            <Button 
+              onClick={() => setIsSosMapOpen(false)} 
+              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-destructive hover:bg-destructive/90 shadow-xl shadow-destructive/20 text-white"
+            >
+              Acknowledge & Close Tactical Map
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
         <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
@@ -595,7 +697,7 @@ export default function DashboardPage() {
                 </div>
                 {itemToView.phoneNumber && (
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Comms Path</span>
+                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Phone Number</span>
                     <span className="text-[10px] font-mono text-secondary">{itemToView.phoneNumber}</span>
                   </div>
                 )}
