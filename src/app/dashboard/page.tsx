@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useUser, useDatabase, useFirebase, useRtdb } from "@/firebase";
+import { useUser, useDatabase, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
@@ -53,6 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useRtdb } from "@/firebase/database/use-rtdb";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
@@ -264,10 +266,10 @@ export default function DashboardPage() {
 
   const handleStartTracking = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rtdb || !trackSecretId) return;
+    if (!user || !rtdb || !trackSecretId) return;
     
     setRegisterLoading(true);
-    const trackRef = ref(rtdb, `devices/${trackSecretId}`);
+    const trackRef = ref(rtdb, `users/${user.uid}/nodes/${trackSecretId}`);
     
     update(trackRef, { trackRequest: true }).then(() => {
       logAction(`Initiated hardware tracking protocol for ID: ${trackSecretId}`);
@@ -276,11 +278,13 @@ export default function DashboardPage() {
         update(trackRef, { trackRequest: false });
       }, 5000);
 
-      const locationRef = ref(rtdb, `devices/${trackSecretId}/location`);
-      onValue(locationRef, (snapshot) => {
-        const loc = snapshot.val();
-        if (loc) {
-          setTrackingLocation(loc);
+      onValue(trackRef, (snapshot) => {
+        const nodeData = snapshot.val();
+        if (nodeData && nodeData.latitude && nodeData.longitude) {
+          setTrackingLocation({
+            latitude: nodeData.latitude,
+            longitude: nodeData.longitude
+          });
           setIsLiveMapOpen(true);
           setIsTrackDialogOpen(false);
         }
@@ -347,9 +351,9 @@ export default function DashboardPage() {
           {activeTab === 'buddies' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter">MANAGE BUDDY</h1>
+                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE BUDDY</h1>
                 <div className="flex gap-4">
-                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary text-white">
+                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-primary text-white">
                     <UserPlus className="h-4 w-4 mr-2" /> Enlist
                   </Button>
                   <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border-primary/20 hover:bg-primary/5">
@@ -370,7 +374,7 @@ export default function DashboardPage() {
                       <CardHeader className="p-8">
                         <div className="flex justify-between items-start mb-6">
                           <div>
-                            <p className="text-xl font-bold">{buddy.name}</p>
+                            <p className="text-xl font-bold text-[#12086F]">{buddy.name}</p>
                             <p className="text-[10px] font-mono text-secondary uppercase tracking-widest mt-1">{buddy.phoneNumber}</p>
                           </div>
                         </div>
@@ -397,8 +401,8 @@ export default function DashboardPage() {
           {activeTab === 'nodes' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter">MANAGE NODE</h1>
-                <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary text-white">
+                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE NODE</h1>
+                <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-primary text-white">
                   <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
                 </Button>
               </div>
@@ -414,7 +418,7 @@ export default function DashboardPage() {
                     <Card key={node.id} className="glass-card border-none group transition-all">
                       <CardHeader className="p-8">
                         <div className="flex justify-between items-center mb-4">
-                          <p className="text-xl font-bold">{node.nodeName}</p>
+                          <p className="text-xl font-bold text-[#12086F]">{node.nodeName}</p>
                           <div className={cn("h-3 w-3 rounded-full", node.status === 'online' ? 'bg-secondary shadow-[0_0_15px_rgba(72,149,239,0.4)]' : 'bg-muted')} />
                         </div>
                         <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em]">ID: {node.hardwareId}</p>
@@ -456,7 +460,7 @@ export default function DashboardPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter">NOTIFICATION</h1>
+                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
                 {notifications.length > 0 && (
                   <Button 
                     variant="ghost" 
@@ -536,7 +540,7 @@ export default function DashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="max-w-md space-y-10">
-              <h1 className="text-4xl font-bold tracking-tighter">SETTINGS</h1>
+              <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">SETTINGS</h1>
               <Card className="glass-card border-none p-10 space-y-8">
                 <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
                   <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Auth Identification</p>
@@ -565,7 +569,7 @@ export default function DashboardPage() {
                 required 
               />
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Tracking"}
             </Button>
           </form>
@@ -601,7 +605,7 @@ export default function DashboardPage() {
 
             <Button 
               onClick={() => setIsLiveMapOpen(false)} 
-              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-secondary hover:bg-secondary/90 shadow-xl shadow-secondary/20 text-white"
+              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-secondary hover:bg-secondary shadow-xl shadow-secondary/20 text-white"
             >
               Terminate Signal Monitoring
             </Button>
@@ -628,7 +632,7 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="p-8">
-             <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white">
+             <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white">
                Acknowledge Signal
              </Button>
           </div>
@@ -675,7 +679,7 @@ export default function DashboardPage() {
 
             <Button 
               onClick={() => setIsSosMapOpen(false)} 
-              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-destructive hover:bg-destructive/90 shadow-xl shadow-destructive/20 text-white"
+              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-destructive hover:bg-destructive shadow-xl shadow-destructive/20 text-white"
             >
               Acknowledge & Close Tactical Map
             </Button>
@@ -709,7 +713,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
             </Button>
           </form>
@@ -744,7 +748,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
                 {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
               </Button>
             </form>
@@ -782,7 +786,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
             </Button>
           </form>
@@ -821,7 +825,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
                 {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Node"}
               </Button>
             </form>
@@ -837,7 +841,7 @@ export default function DashboardPage() {
               <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Descriptor</span>
-                  <span className="text-sm font-bold">{itemToView.nodeName || itemToView.name}</span>
+                  <span className="text-sm font-bold text-[#12086F]">{itemToView.nodeName || itemToView.name}</span>
                 </div>
                 {itemToView.phoneNumber && (
                   <div className="flex justify-between items-center">
@@ -889,7 +893,7 @@ export default function DashboardPage() {
                 push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name: newGroupName });
                 logAction(`Created new protocol group: ${newGroupName}`);
                 setNewGroupName("");
-              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-secondary text-white"><PlusCircle className="h-6 w-6" /></Button>
+              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-primary text-white"><PlusCircle className="h-6 w-6" /></Button>
             </div>
             <ScrollArea className="h-64 pr-4">
               <div className="space-y-3">
@@ -931,7 +935,7 @@ export default function DashboardPage() {
                 setItemToDelete(null);
                 toast({ title: "Asset Purged" });
               });
-            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive/90 text-white">Confirm Purge</AlertDialogAction>
+            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive text-white">Confirm Purge</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
