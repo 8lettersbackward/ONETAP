@@ -272,6 +272,10 @@ export default function DashboardPage() {
     update(trackRef, { trackRequest: true }).then(() => {
       logAction(`Initiated hardware tracking protocol for ID: ${trackSecretId}`);
       
+      setTimeout(() => {
+        update(trackRef, { trackRequest: false });
+      }, 5000);
+
       const locationRef = ref(rtdb, `devices/${trackSecretId}/location`);
       onValue(locationRef, (snapshot) => {
         const loc = snapshot.val();
