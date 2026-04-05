@@ -96,6 +96,7 @@ export default function DashboardPage() {
   });
 
   const [allDiscoveredNodes, setAllDiscoveredNodes] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [trackingLocation, setTrackingLocation] = useState<any>(null);
   const [isLiveMapOpen, setIsLiveMapOpen] = useState(false);
   const [activeTrackedNode, setActiveTrackedNode] = useState<any>(null);
@@ -261,24 +262,50 @@ export default function DashboardPage() {
       setActiveTrackedNode(targetNode);
       logAction(`Signal Lock Initiated for Hardware: ${targetNode.hardwareId}`);
       
-      // Cleanup signal after 10s
-      setTimeout(() => {
-        update(nodeRef, { trackRequest: false, trackRequester: null });
-      }, 10000);
-
       const statusUnsubscribe = onValue(nodeRef, (snapshot) => {
         const data = snapshot.val();
-        if (data && data.latitude && data.longitude) {
-          setTrackingLocation({
-            latitude: data.latitude,
-            longitude: data.longitude
-          });
-          setIsLiveMapOpen(true);
-          toast({ title: "Signal Locked", description: `Communicating with: ${data.phoneNumber || 'N/A'}` });
-          statusUnsubscribe();
+        if (data) {
+          if (data.latitude && data.longitude) {
+            setTrackingLocation({
+              latitude: data.latitude,
+              longitude: data.longitude
+            });
+            setIsLiveMapOpen(true);
+            toast({ 
+              title: "Signal Locked", 
+              description: `Signal locked for hardware ID: ${targetNode.hardwareId}. Phone: ${data.phoneNumber || 'N/A'}` 
+            });
+            statusUnsubscribe();
+            
+            // Auto-reset signal after lock is established
+            setTimeout(() => {
+              update(nodeRef, { trackRequest: false, trackRequester: null });
+            }, 10000);
+          }
         }
       });
+    }).catch((err) => {
+      toast({ variant: "destructive", title: "Intercept Failed", description: err.message });
     }).finally(() => setRegisterLoading(false));
+  };
+
+  const handleManualSearch = () => {
+    if (!searchQuery) return;
+    
+    const target = allDiscoveredNodes.find(n => 
+      n.hardwareId?.toLowerCase() === searchQuery.toLowerCase() || 
+      n.nodeName?.toLowerCase() === searchQuery.toLowerCase()
+    );
+
+    if (target) {
+      handleInitiateTracking(target);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Signal Lost",
+        description: "No matching hardware signature found in the network."
+      });
+    }
   };
 
   const safeFormatTime = (ts: any) => {
@@ -358,48 +385,52 @@ export default function DashboardPage() {
                <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">TRACK</h1>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Tactical Asset Discovery</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Tactical Signal Intercept</p>
                   </div>
                   <Badge className="bg-secondary/20 text-secondary border-none px-4 py-1.5 text-[9px] uppercase font-bold rounded-full flex items-center gap-2">
                     <Activity className="h-3 w-3 animate-pulse" /> Network Scan Active
                   </Badge>
                </div>
                
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                 {allDiscoveredNodes.length === 0 ? (
-                   <Card className="glass-card col-span-full p-24 text-center border-dashed border-primary/20 bg-white/20">
-                     <Search className="h-12 w-12 text-primary/20 mx-auto mb-6" />
-                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Scanning Network... No Hardware Signatures Found</p>
-                   </Card>
-                 ) : (
-                   allDiscoveredNodes.map((target, idx) => (
-                     <Card key={idx} className="glass-card border-none hover:shadow-2xl transition-all group">
-                       <CardHeader className="p-8">
-                         <div className="flex justify-between items-start mb-6">
-                            <div className="h-10 w-10 bg-secondary/10 rounded-xl flex items-center justify-center border border-secondary/20">
-                              <Cpu className="h-5 w-5 text-secondary" />
-                            </div>
-                            <Badge className={cn("text-[8px] uppercase font-bold", target.status === 'online' ? "bg-secondary/10 text-secondary" : "bg-muted text-muted-foreground")}>{target.status || 'Active'}</Badge>
-                         </div>
-                         <div>
-                            <p className="text-lg font-bold text-[#12086F]">{target.nodeName}</p>
-                            <p className="text-[9px] font-mono text-secondary uppercase tracking-widest mt-1">ID: {target.hardwareId}</p>
-                         </div>
-                       </CardHeader>
-                       <CardContent className="p-8 pt-0">
-                          <div className="pt-6 border-t border-primary/10 flex gap-4">
-                            <Button 
-                              onClick={() => handleInitiateTracking(target)} 
-                              disabled={registerLoading}
-                              className="w-full rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-[9px] uppercase tracking-widest h-10 shadow-lg shadow-secondary/10"
-                            >
-                              {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Radar className="h-3.5 w-3.5 mr-2" /> Track Asset</>}
-                            </Button>
-                          </div>
-                       </CardContent>
-                     </Card>
-                   ))
-                 )}
+               <Card className="glass-card border-none p-10 shadow-2xl">
+                 <div className="space-y-8">
+                   <div className="space-y-4">
+                     <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID or Node Name</Label>
+                     <div className="flex flex-col md:flex-row gap-4">
+                       <Input 
+                         placeholder="Enter signature (e.g. 1Tap, SMART-01)" 
+                         value={searchQuery}
+                         onChange={(e) => setSearchQuery(e.target.value)}
+                         onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                         className="bg-primary/5 border-primary/10 rounded-2xl h-16 text-sm font-bold flex-1 px-6 shadow-inner"
+                       />
+                       <Button 
+                         onClick={handleManualSearch} 
+                         disabled={registerLoading || !searchQuery}
+                         className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-16 px-12 bg-secondary hover:bg-secondary/90 text-white shadow-xl shadow-secondary/20"
+                       >
+                         {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Radar className="h-5 w-5 mr-3" /> Intercept Signal</>}
+                       </Button>
+                     </div>
+                   </div>
+                   
+                   <div className="pt-6 border-t border-primary/5">
+                     <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Global Network Status: {allDiscoveredNodes.length} Active Nodes Detected</p>
+                   </div>
+                 </div>
+               </Card>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-40 grayscale pointer-events-none">
+                 {/* This section is now just a placeholder for background aesthetics as per "Search instead of selecting" */}
+                 <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Standby</p>
+                 </div>
+                 <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Scanning</p>
+                 </div>
+                 <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Waiting</p>
+                 </div>
                </div>
              </div>
           )}
