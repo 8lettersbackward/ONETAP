@@ -52,7 +52,8 @@ import {
   Check,
   X,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Navigation
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -179,7 +180,7 @@ export default function DashboardPage() {
     }
   }, [user, rtdb]);
 
-  // Sync edit forms when itemToEdit changes
+  // Sync edit forms
   useEffect(() => {
     if (itemToEdit && isEditBuddyDialogOpen) {
       setBuddyForm({
@@ -338,6 +339,42 @@ export default function DashboardPage() {
     });
   };
 
+  const handleRequestTracking = (link: any) => {
+    if (!user || !rtdb) return;
+    const updates: any = {};
+    updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = 'pending';
+    updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = 'requested';
+
+    update(ref(rtdb), updates).then(() => {
+      toast({ title: "Track Request Sent", description: "Awaiting user authorization." });
+      logAction(`Dispatched live track request for: ${link.email}`);
+    });
+  };
+
+  const handleApproveTracking = (link: any) => {
+    if (!user || !rtdb) return;
+    const updates: any = {};
+    updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = 'approved';
+    updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = 'approved';
+
+    update(ref(rtdb), updates).then(() => {
+      toast({ title: "Track Authorized", description: "Spatial telemetry broadcast granted." });
+      logAction(`Authorized live tracking for Guardian: ${link.email}`);
+    });
+  };
+
+  const handleRejectTracking = (link: any) => {
+    if (!user || !rtdb) return;
+    const updates: any = {};
+    updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = null;
+    updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = null;
+
+    update(ref(rtdb), updates).then(() => {
+      toast({ title: "Track Denied", description: "Spatial telemetry request rejected." });
+      logAction(`Rejected live tracking request from: ${link.email}`);
+    });
+  };
+
   const handleSearchManual = () => {
     if (!searchQuery) return;
     const target = allUsers.find(u => u.email?.toLowerCase() === searchQuery.toLowerCase());
@@ -346,6 +383,27 @@ export default function DashboardPage() {
     } else {
       toast({ variant: "destructive", title: "Target Missing", description: "No registered personnel found with this signature." });
     }
+  };
+
+  const handleOpenLiveMap = (targetUid: string) => {
+    if (!rtdb) return;
+    // For MVP, we'll listen to the user's first node or a global SOS status
+    // In a real app, we'd listen to specifically that user's GPS stream
+    const nodeRef = ref(rtdb, `users/${targetUid}/nodes`);
+    get(nodeRef).then(snapshot => {
+      const nodes = snapshot.val();
+      if (nodes) {
+        const firstNode = Object.values(nodes)[0] as any;
+        setActiveTrackedNode(firstNode);
+        setTrackingLocation({
+          latitude: firstNode.latitude || 0,
+          longitude: firstNode.longitude || 0
+        });
+        setIsLiveMapOpen(true);
+      } else {
+        toast({ variant: "destructive", title: "Asset Missing", description: "User has no active hardware nodes reported." });
+      }
+    });
   };
 
   const safeFormatTime = (ts: any) => {
@@ -490,9 +548,34 @@ export default function DashboardPage() {
                         </div>
                         <Badge className="bg-secondary text-white text-[8px] px-2 py-0.5 rounded-md">LINKED</Badge>
                       </div>
-                      <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl" onClick={() => handleRejectLink(link)}>
-                        Sever Link
-                      </Button>
+                      <div className="space-y-3">
+                        {link.trackingRequest === 'approved' ? (
+                          <Button 
+                            className="w-full bg-accent hover:bg-accent text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
+                            onClick={() => handleOpenLiveMap(link.uid)}
+                          >
+                            <Navigation className="h-3.5 w-3.5 mr-2" /> Live Tactical Map
+                          </Button>
+                        ) : link.trackingRequest === 'requested' ? (
+                          <Button disabled className="w-full bg-muted text-muted-foreground rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
+                            Awaiting Signal Fix
+                          </Button>
+                        ) : (
+                          <Button 
+                            className="w-full bg-primary hover:bg-primary text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
+                            onClick={() => handleRequestTracking(link)}
+                          >
+                            <Radar className="h-3.5 w-3.5 mr-2" /> Track Asset
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl" 
+                          onClick={() => handleRejectLink(link)}
+                        >
+                          Sever Link
+                        </Button>
+                      </div>
                     </Card>
                   ))}
                   {links.filter(l => l.status === 'requested').map(link => (
@@ -551,6 +634,36 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-6 pt-10 border-t border-primary/10">
+                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">TRACKING REQUESTS</h2>
+                {links.filter(l => l.trackingRequest === 'pending').length === 0 ? (
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No pending signal track requests.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {links.filter(l => l.trackingRequest === 'pending').map(link => (
+                      <Card key={link.uid} className="glass-card border-none p-8 bg-accent/5 border-l-4 border-l-accent">
+                        <div className="flex justify-between items-start mb-6">
+                          <div>
+                            <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
+                            <p className="text-[10px] font-mono text-accent uppercase tracking-widest truncate">{link.email}</p>
+                            <Badge className="mt-3 bg-accent text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">Request: Live Tracking</Badge>
+                          </div>
+                          <Radar className="h-5 w-5 text-accent animate-pulse" />
+                        </div>
+                        <div className="flex gap-3">
+                          <Button onClick={() => handleApproveTracking(link)} className="flex-1 bg-accent hover:bg-accent text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
+                            Grant Access
+                          </Button>
+                          <Button onClick={() => handleRejectTracking(link)} variant="ghost" className="flex-1 border border-destructive/20 text-destructive hover:bg-destructive/5 rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
+                            Deny
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-6 pt-10 border-t border-primary/10">
                 <h2 className="text-xl font-bold tracking-tight text-[#12086F]">LINKED GUARDIANS</h2>
                 {activeLinks.length === 0 ? (
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active guardian links synchronized.</p>
@@ -562,16 +675,30 @@ export default function DashboardPage() {
                           <div>
                             <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
                             <p className="text-[10px] font-mono text-secondary uppercase tracking-widest truncate">{link.email}</p>
+                            {link.trackingRequest === 'approved' && (
+                              <Badge className="mt-2 bg-accent/20 text-accent border-none text-[8px] font-bold px-2">SIGNAL BROADCASTING</Badge>
+                            )}
                           </div>
                           <UserCheck className="h-5 w-5 text-secondary" />
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          className="mt-6 w-full text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl"
-                          onClick={() => handleRejectLink(link)}
-                        >
-                          Terminate Protocol
-                        </Button>
+                        <div className="mt-6 space-y-3">
+                          {link.trackingRequest === 'approved' && (
+                            <Button 
+                              variant="outline" 
+                              className="w-full border-accent text-accent hover:bg-accent/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl"
+                              onClick={() => handleRejectTracking(link)}
+                            >
+                              Revoke Signal Access
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            className="w-full text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl"
+                            onClick={() => handleRejectLink(link)}
+                          >
+                            Terminate Protocol
+                          </Button>
+                        </div>
                       </Card>
                     ))}
                   </div>
