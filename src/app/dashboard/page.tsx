@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -107,7 +108,7 @@ export default function DashboardPage() {
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
-  const [isEditBuddyDialogOpen, setIsAddBuddyDialogOpen2] = useState(false); // Refined from prior prompts
+  const [isEditBuddyDialogOpen, setIsEditBuddyDialogOpen] = useState(false);
   const [isEditNodeDialogOpen, setIsEditNodeDialogOpen] = useState(false);
   const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
@@ -732,7 +733,7 @@ export default function DashboardPage() {
                       <CardContent className="p-8 pt-0">
                         <div className="flex gap-4 pt-6 border-t border-primary/10">
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(buddy); setIsAddBuddyDialogOpen2(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -1083,6 +1084,51 @@ export default function DashboardPage() {
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Recalibrate Buddy Protocol</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!user || !rtdb || !itemToEdit) return;
+            setRegisterLoading(true);
+            update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), buddyForm)
+              .then(() => {
+                logAction(`Updated buddy profile: ${buddyForm.name}`);
+                setIsEditBuddyDialogOpen(false);
+                setItemToEdit(null);
+                toast({ title: "Buddy Protocol Synchronized" });
+              })
+              .finally(() => setRegisterLoading(false));
+          }} className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
+              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
+              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+                {buddyGroups.map(g => (
+                  <div key={g} className="flex items-center gap-3">
+                    <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
+                      const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
+                      setBuddyForm({...buddyForm, groups: updated});
+                    }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Recalibration"}
             </Button>
           </form>
         </DialogContent>
