@@ -52,7 +52,8 @@ import {
   X,
   ShieldCheck,
   UserCheck,
-  Navigation
+  Navigation,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -101,9 +102,8 @@ export default function DashboardPage() {
 
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [trackingLocation, setTrackingLocation] = useState<any>(null);
-  const [isLiveMapOpen, setIsLiveMapOpen] = useState(false);
-  const [activeTrackedNode, setActiveTrackedNode] = useState<any>(null);
+  const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
+  const [activeTrackedNodes, setActiveTrackedNodes] = useState<any[]>([]);
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
@@ -356,9 +356,16 @@ export default function DashboardPage() {
     updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = 'approved';
     updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = 'approved';
 
+    // Set trackRequest = true for all nodes belonging to the user
+    if (nodesData) {
+      Object.keys(nodesData).forEach(nodeId => {
+        updates[`users/${user.uid}/nodes/${nodeId}/trackRequest`] = true;
+      });
+    }
+
     update(ref(rtdb), updates).then(() => {
-      toast({ title: "Track Authorized", description: "Spatial telemetry broadcast granted." });
-      logAction(`Authorized live tracking for Guardian: ${link.email}`);
+      toast({ title: "Track Authorized", description: "Hardware telemetry broadcast granted." });
+      logAction(`Authorized tracking for Guardian: ${link.email}`);
     });
   };
 
@@ -368,9 +375,16 @@ export default function DashboardPage() {
     updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = null;
     updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = null;
 
+    // Reset trackRequest = false for all nodes if denied (safety fallback)
+    if (nodesData) {
+      Object.keys(nodesData).forEach(nodeId => {
+        updates[`users/${user.uid}/nodes/${nodeId}/trackRequest`] = false;
+      });
+    }
+
     update(ref(rtdb), updates).then(() => {
       toast({ title: "Track Denied", description: "Spatial telemetry request rejected." });
-      logAction(`Rejected live tracking request from: ${link.email}`);
+      logAction(`Rejected tracking request from: ${link.email}`);
     });
   };
 
@@ -384,19 +398,15 @@ export default function DashboardPage() {
     }
   };
 
-  const handleOpenLiveMap = (targetUid: string) => {
+  const handleOpenTelemetry = (targetUid: string) => {
     if (!rtdb) return;
     const nodeRef = ref(rtdb, `users/${targetUid}/nodes`);
     get(nodeRef).then(snapshot => {
-      const nodes = snapshot.val();
-      if (nodes) {
-        const firstNode = Object.values(nodes)[0] as any;
-        setActiveTrackedNode(firstNode);
-        setTrackingLocation({
-          latitude: firstNode.latitude || 0,
-          longitude: firstNode.longitude || 0
-        });
-        setIsLiveMapOpen(true);
+      const nodesVal = snapshot.val();
+      if (nodesVal) {
+        const nodeList = Object.entries(nodesVal).map(([id, val]: [string, any]) => ({ ...val, id }));
+        setActiveTrackedNodes(nodeList);
+        setIsTelemetryOpen(true);
       } else {
         toast({ variant: "destructive", title: "Asset Missing", description: "User has no active hardware nodes reported." });
       }
@@ -528,20 +538,20 @@ export default function DashboardPage() {
                         {link.trackingRequest === 'approved' ? (
                           <Button 
                             className="w-full bg-accent hover:bg-accent text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
-                            onClick={() => handleOpenLiveMap(link.uid)}
+                            onClick={() => handleOpenTelemetry(link.uid)}
                           >
-                            <Navigation className="h-3.5 w-3.5 mr-2" /> Live Tactical Map
+                            <Info className="h-3.5 w-3.5 mr-2" /> Track Asset
                           </Button>
                         ) : link.trackingRequest === 'requested' ? (
                           <Button disabled className="w-full bg-muted text-muted-foreground rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
-                            Awaiting Signal Fix
+                            Awaiting Authorization
                           </Button>
                         ) : (
                           <Button 
                             className="w-full bg-primary hover:bg-primary text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
                             onClick={() => handleRequestTracking(link)}
                           >
-                            <Radar className="h-3.5 w-3.5 mr-2" /> Track Asset
+                            <Radar className="h-3.5 w-3.5 mr-2" /> Request Track
                           </Button>
                         )}
                         <Button 
@@ -563,7 +573,7 @@ export default function DashboardPage() {
                         </div>
                         <Badge variant="outline" className="text-[8px] px-2 py-0.5 rounded-md">PENDING</Badge>
                       </div>
-                      <p className="text-[8px] font-bold uppercase tracking-widest opacity-60 text-center">Awaiting Authorization</p>
+                      <p className="text-[8px] font-bold uppercase tracking-widest opacity-60 text-center">Awaiting Approval</p>
                     </Card>
                   ))}
                 </div>
@@ -621,7 +631,7 @@ export default function DashboardPage() {
                           <div>
                             <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
                             <p className="text-[10px] font-mono text-accent uppercase tracking-widest truncate">{link.email}</p>
-                            <Badge className="mt-3 bg-accent text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">Request: Live Tracking</Badge>
+                            <Badge className="mt-3 bg-accent text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">Request: Hardware Tracking</Badge>
                           </div>
                           <Radar className="h-5 w-5 text-accent animate-pulse" />
                         </div>
@@ -652,7 +662,7 @@ export default function DashboardPage() {
                             <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
                             <p className="text-[10px] font-mono text-secondary uppercase tracking-widest truncate">{link.email}</p>
                             {link.trackingRequest === 'approved' && (
-                              <Badge className="mt-2 bg-accent/20 text-accent border-none text-[8px] font-bold px-2">SIGNAL BROADCASTING</Badge>
+                              <Badge className="mt-2 bg-accent/20 text-accent border-none text-[8px] font-bold px-2">HARDWARE TRACKING ACTIVE</Badge>
                             )}
                           </div>
                           <UserCheck className="h-5 w-5 text-secondary" />
@@ -664,7 +674,7 @@ export default function DashboardPage() {
                               className="w-full border-accent text-accent hover:bg-accent/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl"
                               onClick={() => handleRejectTracking(link)}
                             >
-                              Revoke Signal Access
+                              Revoke Track Access
                             </Button>
                           )}
                           <Button 
@@ -898,38 +908,59 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <Dialog open={isLiveMapOpen} onOpenChange={setIsLiveMapOpen}>
-        <DialogContent className="bg-white border-2 border-secondary/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-10 border-b border-secondary/5 bg-secondary/5">
+      <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
+        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-10 border-b border-accent/5 bg-accent/5">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
-                  <Radar className="h-8 w-8 text-secondary animate-pulse" />
+                  <Radar className="h-8 w-8 text-accent animate-pulse" />
                   <div>
-                    <DialogTitle className="text-2xl font-bold text-secondary uppercase tracking-tighter">Live Asset Tracking</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Asset: {activeTrackedNode?.nodeName} | ID: {activeTrackedNode?.hardwareId}</p>
+                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Asset Telemetry</DialogTitle>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Synchronized Hardware Signals</p>
                   </div>
                </div>
-               <Badge className="bg-secondary text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
+               <Badge className="bg-accent text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
              </div>
           </DialogHeader>
           <div className="p-10 space-y-8">
-            <div className="relative rounded-2xl overflow-hidden border border-secondary/10 shadow-inner">
-               <SOSMap 
-                  latitude={trackingLocation?.latitude || 0} 
-                  longitude={trackingLocation?.longitude || 0}
-                  label={`ACTIVE SIGNAL: ${activeTrackedNode?.nodeName}`}
-               />
-               <div className="absolute bottom-6 left-6 right-6 z-[1000] glass-card p-4 rounded-xl flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-secondary" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest flex-1">Lat: {isValidCoordinate(trackingLocation?.latitude) ? parseFloat(trackingLocation.latitude).toFixed(6) : '0.00'} | Lng: {isValidCoordinate(trackingLocation?.longitude) ? parseFloat(trackingLocation.longitude).toFixed(6) : '0.00'}</p>
-               </div>
-            </div>
-
+            <ScrollArea className="max-h-[400px]">
+              {activeTrackedNodes.length === 0 ? (
+                <div className="p-12 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No hardware nodes reported for this asset.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {activeTrackedNodes.map(node => (
+                    <Card key={node.id} className="p-6 bg-primary/5 border-none rounded-2xl">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <p className="text-lg font-bold text-[#12086F]">{node.nodeName}</p>
+                          <p className="text-[10px] font-mono text-secondary uppercase tracking-widest">HWID: {node.hardwareId}</p>
+                        </div>
+                        <Badge className={cn("text-[9px]", node.status === 'online' ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground')}>
+                          {node.status?.toUpperCase() || 'OFFLINE'}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="p-4 bg-white/60 rounded-xl border border-primary/5">
+                            <Label className="text-[8px] font-bold uppercase opacity-40">Communication ID</Label>
+                            <p className="text-sm font-bold mt-1">{node.phoneNumber || 'N/A'}</p>
+                         </div>
+                         <div className="p-4 bg-white/60 rounded-xl border border-primary/5">
+                            <Label className="text-[8px] font-bold uppercase opacity-40">Thermal Reading</Label>
+                            <p className="text-sm font-bold mt-1">{node.temperature || '---'}°C</p>
+                         </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
             <Button 
-              onClick={() => setIsLiveMapOpen(false)} 
-              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-secondary hover:bg-secondary shadow-xl shadow-secondary/20 text-white"
+              onClick={() => setIsTelemetryOpen(false)} 
+              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
             >
-              Terminate Signal Monitoring
+              Close Telemetry Feed
             </Button>
           </div>
         </DialogContent>
