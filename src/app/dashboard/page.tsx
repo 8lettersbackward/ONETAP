@@ -2,10 +2,10 @@
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +48,11 @@ import {
   Radar,
   ShieldAlert,
   Search,
-  Activity
+  Activity,
+  Check,
+  X,
+  ShieldCheck,
+  UserCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -64,7 +68,7 @@ const SOSMap = dynamic(() => import("./sos-map"), {
   loading: () => <div className="h-[420px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40">Initializing Terminal Map...</div>
 });
 
-type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings' | 'guardian';
+type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings' | 'guardian' | 'my-guardians';
 
 const DEFAULT_BUDDY_GROUPS = ["Family", "Friend", "Close Friend"];
 
@@ -95,7 +99,7 @@ export default function DashboardPage() {
     targetGroups: [] as string[]
   });
 
-  const [allDiscoveredNodes, setAllDiscoveredNodes] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [trackingLocation, setTrackingLocation] = useState<any>(null);
   const [isLiveMapOpen, setIsLiveMapOpen] = useState(false);
@@ -147,36 +151,33 @@ export default function DashboardPage() {
         setUserRole(profile?.role || 'user');
         if (profile?.role === 'guardian') {
           setActiveTab('guardian');
+        } else {
+          setActiveTab('buddies');
         }
       });
     }
   }, [user, userLoading, router, rtdb]);
 
   useEffect(() => {
-    if (userRole === 'guardian' && rtdb) {
+    if (rtdb && user) {
       const usersRef = ref(rtdb, 'users');
       const unsubscribe = onValue(usersRef, (snapshot) => {
-        const allUsers = snapshot.val();
-        const nodesList: any[] = [];
-        if (allUsers) {
-          for (const uid in allUsers) {
-            const userNodes = allUsers[uid].nodes;
-            if (userNodes) {
-              for (const nKey in userNodes) {
-                nodesList.push({
-                  ...userNodes[nKey],
-                  ownerUid: uid,
-                  nodeKey: nKey
-                });
-              }
-            }
-          }
+        const data = snapshot.val();
+        if (data) {
+          const list = Object.entries(data)
+            .filter(([uid]) => uid !== user.uid)
+            .map(([uid, val]: [string, any]) => ({
+              uid,
+              email: val.profile?.email || 'N/A',
+              displayName: val.profile?.displayName || (val.profile?.email ? val.profile.email.split('@')[0] : 'Tactical Unit'),
+              role: val.profile?.role || 'user'
+            }));
+          setAllUsers(list);
         }
-        setAllDiscoveredNodes(nodesList);
       });
       return () => off(usersRef, 'value', unsubscribe);
     }
-  }, [userRole, rtdb]);
+  }, [user, rtdb]);
 
   // Sync edit forms when itemToEdit changes
   useEffect(() => {
@@ -209,6 +210,9 @@ export default function DashboardPage() {
 
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
+
+  const linksRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/links`) : null, [rtdb, user]);
+  const { data: linksData } = useRtdb(linksRef);
 
   useEffect(() => {
     if (!user || !rtdb) return;
@@ -258,6 +262,14 @@ export default function DashboardPage() {
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [notificationsData, vaultClearedAt]);
 
+  const links = useMemo(() => {
+    if (!linksData) return [];
+    return Object.entries(linksData).map(([id, val]: [string, any]) => ({ ...val, uid: id }));
+  }, [linksData]);
+
+  const pendingRequests = useMemo(() => links.filter(l => l.status === 'pending'), [links]);
+  const activeLinks = useMemo(() => links.filter(l => l.status === 'linked'), [links]);
+
   const logAction = (message: string, type: string = 'system_log') => {
     if (!user || !rtdb) return;
     const notificationRef = ref(rtdb, `users/${user.uid}/notifications`);
@@ -275,61 +287,64 @@ export default function DashboardPage() {
     toast({ title: "Terminal Purged", description: "Interface logs cleared locally." });
   };
 
-  const handleInitiateTracking = (targetNode: any) => {
+  const handleSendLinkRequest = (targetUser: any) => {
     if (!user || !rtdb) return;
-    
     setRegisterLoading(true);
-    const nodeRef = ref(rtdb, `users/${targetNode.ownerUid}/nodes/${targetNode.nodeKey}`);
-    
-    update(nodeRef, { 
-      trackRequest: true,
-      trackRequester: user.uid 
-    }).then(() => {
-      setActiveTrackedNode(targetNode);
-      logAction(`Signal Lock Initiated for Hardware: ${targetNode.hardwareId}`);
-      
-      const statusUnsubscribe = onValue(nodeRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          if (isValidCoordinate(data.latitude) && isValidCoordinate(data.longitude)) {
-            setTrackingLocation({
-              latitude: data.latitude,
-              longitude: data.longitude
-            });
-            setIsLiveMapOpen(true);
-            toast({ 
-              title: "Signal Locked", 
-              description: `Signal locked for hardware ID: ${targetNode.hardwareId}. Phone: ${data.phoneNumber || 'N/A'}` 
-            });
-            statusUnsubscribe();
-            
-            setTimeout(() => {
-              update(nodeRef, { trackRequest: false, trackRequester: null });
-            }, 10000);
-          }
-        }
-      });
-    }).catch((err) => {
-      toast({ variant: "destructive", title: "Intercept Failed", description: err.message });
-    }).finally(() => setRegisterLoading(false));
+
+    const updates: any = {};
+    updates[`users/${targetUser.uid}/links/${user.uid}`] = {
+      status: 'pending',
+      email: user.email,
+      role: userRole,
+      createdAt: Date.now()
+    };
+    updates[`users/${user.uid}/links/${targetUser.uid}`] = {
+      status: 'requested',
+      email: targetUser.email,
+      role: targetUser.role,
+      createdAt: Date.now()
+    };
+
+    update(ref(rtdb), updates)
+      .then(() => {
+        toast({ title: "Link Dispatched", description: `Tactical link request sent to ${targetUser.email}` });
+        logAction(`Initiated tactical link request for: ${targetUser.email}`);
+      })
+      .catch((err) => toast({ variant: "destructive", title: "Dispatch Failed", description: err.message }))
+      .finally(() => setRegisterLoading(false));
   };
 
-  const handleManualSearch = () => {
-    if (!searchQuery) return;
-    
-    const target = allDiscoveredNodes.find(n => 
-      n.hardwareId?.toLowerCase() === searchQuery.toLowerCase() || 
-      n.nodeName?.toLowerCase() === searchQuery.toLowerCase()
-    );
+  const handleApproveLink = (request: any) => {
+    if (!user || !rtdb) return;
+    const updates: any = {};
+    updates[`users/${user.uid}/links/${request.uid}/status`] = 'linked';
+    updates[`users/${request.uid}/links/${user.uid}/status`] = 'linked';
 
+    update(ref(rtdb), updates).then(() => {
+      toast({ title: "Link Synchronized", description: "Guardian link authorized." });
+      logAction(`Approved tactical link from Guardian: ${request.email}`);
+    });
+  };
+
+  const handleRejectLink = (request: any) => {
+    if (!user || !rtdb) return;
+    const updates: any = {};
+    updates[`users/${user.uid}/links/${request.uid}`] = null;
+    updates[`users/${request.uid}/links/${user.uid}`] = null;
+
+    update(ref(rtdb), updates).then(() => {
+      toast({ title: "Link Rejected", description: "Tactical connection purged." });
+      logAction(`Rejected tactical link from: ${request.email}`);
+    });
+  };
+
+  const handleSearchManual = () => {
+    if (!searchQuery) return;
+    const target = allUsers.find(u => u.email?.toLowerCase() === searchQuery.toLowerCase());
     if (target) {
-      handleInitiateTracking(target);
+      handleSendLinkRequest(target);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Signal Lost",
-        description: "No matching hardware signature found in the network."
-      });
+      toast({ variant: "destructive", title: "Target Missing", description: "No registered personnel found with this signature." });
     }
   };
 
@@ -357,13 +372,14 @@ export default function DashboardPage() {
 
   const navItems = userRole === 'guardian' 
     ? [
-        { id: 'guardian', label: 'TRACK', icon: Radar },
+        { id: 'guardian', label: 'LINKED USERS', icon: Radar },
         { id: 'notifications', label: 'NOTIFICATION', icon: Bell },
         { id: 'settings', label: 'PROFILE', icon: Settings },
       ]
     : [
         { id: 'buddies', label: 'MANAGE BUDDIES', icon: Smartphone },
         { id: 'nodes', label: 'MANAGE NODES', icon: Cpu },
+        { id: 'my-guardians', label: 'MY GUARDIANS', icon: ShieldCheck },
         { id: 'notifications', label: 'NOTIFICATION', icon: Bell },
         { id: 'settings', label: 'PROFILE', icon: Settings },
       ];
@@ -405,58 +421,163 @@ export default function DashboardPage() {
 
       <main className="flex-1 p-6 md:p-16 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
-          {activeTab === 'guardian' && (
-             <div className="space-y-10">
-               <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">TRACK</h1>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Tactical Signal Intercept</p>
-                  </div>
-                  <Badge className="bg-secondary/20 text-secondary border-none px-4 py-1.5 text-[9px] uppercase font-bold rounded-full flex items-center gap-2">
-                    <Activity className="h-3 w-3 animate-pulse" /> Network Scan Active
-                  </Badge>
-               </div>
-               
-               <Card className="glass-card border-none p-10 shadow-2xl">
-                 <div className="space-y-8">
-                   <div className="space-y-4">
-                     <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID or Node Name</Label>
-                     <div className="flex flex-col md:flex-row gap-4">
-                       <Input 
-                         placeholder="Enter signature (e.g. 1Tap, SMART-01)" 
-                         value={searchQuery}
-                         onChange={(e) => setSearchQuery(e.target.value)}
-                         onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
-                         className="bg-primary/5 border-primary/10 rounded-2xl h-16 text-sm font-bold flex-1 px-6 shadow-inner"
-                       />
-                       <Button 
-                         onClick={handleManualSearch} 
-                         disabled={registerLoading || !searchQuery}
-                         className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-16 px-12 bg-secondary hover:bg-secondary/90 text-white shadow-xl shadow-secondary/20"
-                       >
-                         {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Radar className="h-5 w-5 mr-3" /> Intercept Signal</>}
-                       </Button>
-                     </div>
-                   </div>
-                   
-                   <div className="pt-6 border-t border-primary/5">
-                     <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Global Network Status: {allDiscoveredNodes.length} Active Nodes Detected</p>
-                   </div>
-                 </div>
-               </Card>
+          {activeTab === 'guardian' && userRole === 'guardian' && (
+            <div className="space-y-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">LINKED USERS</h1>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Tactical Personnel Recruitment</p>
+                </div>
+                <Badge className="bg-secondary/20 text-secondary border-none px-4 py-1.5 text-[9px] uppercase font-bold rounded-full">
+                  Scan Active
+                </Badge>
+              </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-40 grayscale pointer-events-none">
-                 <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
-                    <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Standby</p>
-                 </div>
-                 <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
-                    <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Scanning</p>
-                 </div>
-                 <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
-                    <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Waiting</p>
-                 </div>
-               </div>
-             </div>
+              <Card className="glass-card border-none p-10 shadow-2xl">
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Enter User Email</Label>
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <Input 
+                        placeholder="e.g. cristian@gmail.com" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearchManual()}
+                        className="bg-primary/5 border-primary/10 rounded-2xl h-16 text-sm font-bold flex-1 px-6 shadow-inner"
+                      />
+                      <Button 
+                        onClick={handleSearchManual} 
+                        disabled={registerLoading || !searchQuery}
+                        className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-16 px-12 bg-secondary hover:bg-secondary/90 text-white"
+                      >
+                        {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><UserPlus className="h-5 w-5 mr-3" /> Search & Link</>}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">DISCOVERED PERSONNEL</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {allUsers.filter(u => !links.find(l => l.uid === u.uid)).map(target => (
+                    <Card key={target.uid} className="glass-card border-none group transition-all p-8 flex flex-col justify-between">
+                      <div>
+                        <p className="text-lg font-bold text-[#12086F] truncate">{target.displayName}</p>
+                        <p className="text-[10px] font-mono text-secondary uppercase tracking-widest mt-1 truncate">{target.email}</p>
+                      </div>
+                      <Button 
+                        onClick={() => handleSendLinkRequest(target)} 
+                        variant="outline" 
+                        className="mt-6 w-full rounded-xl font-bold text-[9px] uppercase tracking-widest border-primary/20 hover:bg-primary/5 h-10"
+                      >
+                        Send Link Request
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-6 pt-10 border-t border-primary/10">
+                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">ACTIVE PROTOCOLS</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {activeLinks.map(link => (
+                    <Card key={link.uid} className="glass-card border-none group transition-all p-8 border-l-4 border-l-secondary">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
+                          <p className="text-[10px] font-mono text-secondary uppercase tracking-widest truncate">{link.email}</p>
+                        </div>
+                        <Badge className="bg-secondary text-white text-[8px] px-2 py-0.5 rounded-md">LINKED</Badge>
+                      </div>
+                      <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl" onClick={() => handleRejectLink(link)}>
+                        Sever Link
+                      </Button>
+                    </Card>
+                  ))}
+                  {links.filter(l => l.status === 'requested').map(link => (
+                    <Card key={link.uid} className="glass-card border-none group transition-all p-8 opacity-60">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest truncate">{link.email}</p>
+                        </div>
+                        <Badge variant="outline" className="text-[8px] px-2 py-0.5 rounded-md">PENDING</Badge>
+                      </div>
+                      <p className="text-[8px] font-bold uppercase tracking-widest opacity-60 text-center">Awaiting Authorization</p>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'my-guardians' && userRole === 'user' && (
+            <div className="space-y-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">MY GUARDIANS</h1>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Authorization Protocols</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">PENDING REQUESTS</h2>
+                {pendingRequests.length === 0 ? (
+                  <Card className="glass-card p-12 text-center border-dashed border-primary/40 bg-white/40">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">No incoming link requests</p>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {pendingRequests.map(request => (
+                      <Card key={request.uid} className="glass-card border-none p-8 space-y-6 bg-secondary/5">
+                        <div>
+                          <p className="text-lg font-bold text-[#12086F] truncate">{request.email.split('@')[0]}</p>
+                          <p className="text-[10px] font-mono text-secondary uppercase tracking-widest truncate">{request.email}</p>
+                          <Badge className="mt-3 bg-secondary text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">Identity: Guardian</Badge>
+                        </div>
+                        <div className="flex gap-3">
+                          <Button onClick={() => handleApproveLink(request)} className="flex-1 bg-primary hover:bg-primary text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
+                            <Check className="h-4 w-4 mr-2" /> Approve
+                          </Button>
+                          <Button onClick={() => handleRejectLink(request)} variant="ghost" className="flex-1 border border-destructive/20 text-destructive hover:bg-destructive/5 rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
+                            <X className="h-4 w-4 mr-2" /> Reject
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-6 pt-10 border-t border-primary/10">
+                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">LINKED GUARDIANS</h2>
+                {activeLinks.length === 0 ? (
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active guardian links synchronized.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {activeLinks.map(link => (
+                      <Card key={link.uid} className="glass-card border-none p-8 border-l-4 border-l-secondary">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
+                            <p className="text-[10px] font-mono text-secondary uppercase tracking-widest truncate">{link.email}</p>
+                          </div>
+                          <UserCheck className="h-5 w-5 text-secondary" />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          className="mt-6 w-full text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl"
+                          onClick={() => handleRejectLink(link)}
+                        >
+                          Terminate Protocol
+                        </Button>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {activeTab === 'buddies' && userRole !== 'guardian' && (
