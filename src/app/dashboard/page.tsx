@@ -952,7 +952,12 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID</Label>
-              <Input value={nodeForm.hardwareId} disabled className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono opacity-50" />
+              <Input 
+                value={nodeForm.hardwareId} 
+                onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} 
+                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" 
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
