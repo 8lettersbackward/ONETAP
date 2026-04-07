@@ -103,7 +103,7 @@ export default function VerifyEmailPage() {
         </CardHeader>
         <CardContent className="space-y-6 p-0 text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            A confirmation signature has been sent to your master email. Please verify your identity to initialize terminal hub access.
+            A confirmation signature has been sent to your master email. Please verify your identity on spam messages to initialize terminal hub access.
           </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4 p-0">
