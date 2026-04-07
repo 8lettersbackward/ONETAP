@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useRtdb, useAuth } from "@/firebase";
@@ -10,9 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile, signOut } from "firebase/auth";
+import { updateProfile, signOut, updatePassword } from "firebase/auth";
 import { ref, set } from "firebase/database";
-import { Loader2, User as UserIcon, LogOut, IdCard, Mail, Camera, ArrowLeft } from "lucide-react";
+import { Loader2, User as UserIcon, LogOut, IdCard, Mail, Camera, ArrowLeft, Lock, KeyRound } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -24,6 +25,10 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [updating, setUpdating] = useState(false);
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   const profileRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/profile`) : null, [rtdb, user]);
   const { data: profileData, loading: profileLoading } = useRtdb(profileRef);
@@ -70,6 +75,46 @@ export default function ProfilePage() {
       });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (newPassword !== confirmNewPassword) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Passwords do not match." });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ variant: "destructive", title: "Security Alert", description: "Password must be at least 6 characters." });
+      return;
+    }
+    
+    setUpdatingPassword(true);
+    try {
+      await updatePassword(user, newPassword);
+      toast({ 
+        title: "Credentials Synchronized", 
+        description: "Your access key has been rotated successfully." 
+      });
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
+        toast({ 
+          variant: "destructive", 
+          title: "Re-authentication Required", 
+          description: "For security, please sign out and sign back in to rotate your access key." 
+        });
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Update Failed", 
+          description: error.message 
+        });
+      }
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -181,6 +226,48 @@ export default function ProfilePage() {
               <CardFooter className="pt-6 border-t border-white/10">
                 <Button type="submit" disabled={updating} className="w-full h-16 bg-primary hover:bg-secondary uppercase font-bold tracking-[0.3em] text-xs shadow-2xl">
                   {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Synchronize Profile"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+
+          <Card className="border-none shadow-2xl bg-white rounded-xl">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-secondary flex items-center gap-2">
+                <Lock className="h-4 w-4" /> Access Credentials
+              </CardTitle>
+              <CardDescription className="text-[10px] uppercase text-muted-foreground">Rotate your access keys.</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleChangePassword}>
+              <CardContent className="space-y-6 pt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">New Access Key</Label>
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    placeholder="••••••••" 
+                    value={newPassword} 
+                    onChange={(e) => setNewPassword(e.target.value)} 
+                    className="bg-background border-white/10 focus:border-primary h-14"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Confirm New Key</Label>
+                  <Input 
+                    id="confirm-new-password" 
+                    type="password"
+                    placeholder="••••••••" 
+                    value={confirmNewPassword} 
+                    onChange={(e) => setConfirmNewPassword(e.target.value)} 
+                    className="bg-background border-white/10 focus:border-primary h-14"
+                    required
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="pt-6 border-t border-white/10">
+                <Button type="submit" disabled={updatingPassword} className="w-full h-16 bg-accent hover:bg-accent/90 uppercase font-bold tracking-[0.3em] text-xs shadow-2xl text-white">
+                  {updatingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <><KeyRound className="mr-2 h-4 w-4" /> Rotate Access Key</>}
                 </Button>
               </CardFooter>
             </form>
