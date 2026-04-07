@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -966,7 +967,7 @@ export default function DashboardPage() {
                              </Button>
                           </div>
                         )}
-                        {(n.type === 'simulation' || isValidCoordinate(n.latitude)) && (
+                        {(n.type === 'simulation' || (isValidCoordinate(n.latitude) && n.type !== 'sos')) && (
                           <div className="ml-0 sm:ml-9 mb-4 space-y-3">
                             <div className="space-y-2">
                               {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 truncate"><MapPin className="h-3 w-3" /> {n.place}</p>}
@@ -1049,7 +1050,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
-        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh]">
+        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 md:p-10 border-b border-accent/5 bg-accent/5">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
@@ -1058,8 +1059,8 @@ export default function DashboardPage() {
                </div>
              </div>
           </DialogHeader>
-          <div className="p-0">
-            <ScrollArea className="max-h-[60vh] md:max-h-[600px]">
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
               {activeTrackedNodes.length === 0 ? (
                 <div className="p-12 md:p-24 text-center">
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active assets reported.</p>
@@ -1093,7 +1094,7 @@ export default function DashboardPage() {
               )}
             </ScrollArea>
           </div>
-          <div className="p-6 md:p-10 bg-white">
+          <div className="p-6 md:p-10 bg-white border-t border-accent/5">
             <Button 
               onClick={() => setIsTelemetryOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
@@ -1105,11 +1106,11 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden max-h-[90vh]">
+        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 md:p-8 border-b border-primary/5">
             <DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary truncate">Spatial Coordinate Intercept</DialogTitle>
           </DialogHeader>
-          <div className="p-0 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
               <div className="relative">
                 <iframe
@@ -1131,7 +1132,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-          <div className="p-6 md:p-8">
+          <div className="p-6 md:p-8 border-t border-primary/5">
              <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white">
                Acknowledge Signal
              </Button>
@@ -1140,7 +1141,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
-        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 md:p-10 border-b border-destructive/5 bg-destructive/5">
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                <div className="flex items-center gap-4 overflow-hidden flex-1">
@@ -1153,7 +1154,7 @@ export default function DashboardPage() {
                <Badge className="bg-destructive text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl animate-pulse flex-shrink-0">Critical Alert</Badge>
              </div>
           </DialogHeader>
-          <div className="p-6 md:p-10 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                <div className="space-y-2">
                  <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
@@ -1180,7 +1181,8 @@ export default function DashboardPage() {
                   <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex-1 truncate">{activeSosAlert?.place || 'Coordinates Identified'}</p>
                </div>
             </div>
-
+          </div>
+          <div className="p-6 md:p-10 bg-white border-t border-destructive/5">
             <Button 
               onClick={() => setIsSosMapOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-destructive hover:bg-destructive shadow-xl shadow-destructive/20 text-white"
