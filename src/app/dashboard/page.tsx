@@ -63,6 +63,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useRtdb } from "@/firebase/database/use-rtdb";
+import { reverseGeocode } from "@/ai/flows/reverse-geocode-flow";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
@@ -254,7 +255,7 @@ export default function DashboardPage() {
 
     const queryRef = ref(rtdb, `users/${user.uid}/notifications`);
     
-    const unsubscribe = onChildAdded(queryRef, (snapshot) => {
+    const unsubscribe = onChildAdded(queryRef, async (snapshot) => {
       const alert = snapshot.val();
       const alertId = snapshot.key;
 
@@ -262,7 +263,18 @@ export default function DashboardPage() {
         lastProcessedSosRef.current = alertId;
         const createdAt = alert.createdAt || alert.timestamp || 0;
         if (Date.now() - createdAt < 30000) {
-          setActiveSosAlert({ ...alert, id: alertId, createdAt });
+          let enhancedAlert = { ...alert, id: alertId, createdAt };
+          
+          if (isValidCoordinate(alert.latitude) && isValidCoordinate(alert.longitude) && !alert.place) {
+            try {
+              const geo = await reverseGeocode({ latitude: alert.latitude, longitude: alert.longitude });
+              enhancedAlert.place = `${geo.city}, ${geo.province}, ${geo.country}`;
+            } catch (e) {
+              console.error("SOS Geocoding failed", e);
+            }
+          }
+          
+          setActiveSosAlert(enhancedAlert);
           setIsSosMapOpen(true);
         }
       }
@@ -323,7 +335,7 @@ export default function DashboardPage() {
     toast({ title: "Terminal Purged", description: "Interface logs cleared locally." });
   };
 
-  const handleExecuteSimulation = (e: React.FormEvent) => {
+  const handleExecuteSimulation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !rtdb) return;
     
@@ -335,11 +347,22 @@ export default function DashboardPage() {
       return;
     }
 
+    setRegisterLoading(true);
+    let placeName = "Location Coordinates Acquired";
+    try {
+      const geo = await reverseGeocode({ latitude: lat, longitude: lng });
+      placeName = `${geo.city}, ${geo.province}, ${geo.country}`;
+    } catch (e) {
+      console.error("Simulation Geocoding failed", e);
+    }
+
     logAction("MANUAL SIGNAL INTERCEPT", "simulation", {
       latitude: lat,
-      longitude: lng
+      longitude: lng,
+      place: placeName
     });
 
+    setRegisterLoading(false);
     setIsSimulateDialogOpen(false);
     toast({ title: "Signal Dispatched", description: "Mock coordinate signature saved to vault." });
   };
@@ -947,6 +970,7 @@ export default function DashboardPage() {
                         {(n.type === 'simulation' || isValidCoordinate(n.latitude)) && (
                           <div className="ml-0 sm:ml-9 mb-4 space-y-3">
                             <div className="space-y-2">
+                              {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 truncate"><MapPin className="h-3 w-3" /> {n.place}</p>}
                               <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
                                 <Navigation className="h-3 w-3" /> LAT: {n.latitude} | LNG: {n.longitude}
                               </p>
@@ -1018,8 +1042,8 @@ export default function DashboardPage() {
                 required 
               />
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white">
-              <Send className="h-4 w-4 mr-3" /> Dispatch Signal
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-3" /> Dispatch Signal</>}
             </Button>
           </form>
         </DialogContent>
@@ -1088,16 +1112,24 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="p-0">
             {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
-              <iframe
-                width="100%"
-                height="300"
-                className="md:h-[400px] max-w-full"
-                style={{ border: 0 }}
-                loading="lazy"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-                src={`https://www.google.com/maps?q=${mapNotification.latitude},${mapNotification.longitude}&output=embed`}
-              ></iframe>
+              <div className="relative">
+                <iframe
+                  width="100%"
+                  height="300"
+                  className="md:h-[400px] max-w-full"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${mapNotification.latitude},${mapNotification.longitude}&output=embed`}
+                ></iframe>
+                {mapNotification.place && (
+                   <div className="absolute bottom-4 left-4 right-4 z-[1000] glass-card p-3 rounded-xl flex items-center gap-3">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest flex-1 truncate">{mapNotification.place}</p>
+                   </div>
+                )}
+              </div>
             )}
           </div>
           <div className="p-6 md:p-8">
