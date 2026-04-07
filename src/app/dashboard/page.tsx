@@ -315,6 +315,20 @@ export default function DashboardPage() {
     toast({ title: "Terminal Purged", description: "Interface logs cleared locally." });
   };
 
+  const handleSimulateLocation = () => {
+    const mockNotification = {
+      id: `SIM-${Date.now()}`,
+      message: "SIMULATED TACTICAL SIGNAL",
+      latitude: 40.7128,
+      longitude: -74.0060,
+      createdAt: Date.now(),
+      type: 'simulation'
+    };
+    setMapNotification(mockNotification);
+    setIsMapModalOpen(true);
+    toast({ title: "Simulation Dispatched", description: "Intercepting mock tactical coordinates." });
+  };
+
   const handleSendLinkRequest = (targetUser: any) => {
     if (!user || !rtdb) return;
     setRegisterLoading(true);
@@ -846,15 +860,24 @@ export default function DashboardPage() {
             <div className="space-y-8 md:space-y-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
-                {notifications.length > 0 && (
+                <div className="flex flex-wrap gap-4 w-full sm:w-auto">
                   <Button 
-                    variant="ghost" 
-                    onClick={handleClearNotifications} 
-                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-primary/10 hover:bg-destructive/10 text-destructive w-full sm:w-auto"
+                    variant="outline" 
+                    onClick={handleSimulateLocation} 
+                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border-secondary/40 hover:bg-secondary/5 text-secondary flex-1 sm:flex-none"
                   >
-                    <Eraser className="h-4 w-4 mr-2" /> Clear Vault
+                    <Radar className="h-4 w-4 mr-2" /> Simulate Signal
                   </Button>
-                )}
+                  {notifications.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={handleClearNotifications} 
+                      className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border border-primary/10 hover:bg-destructive/10 text-destructive flex-1 sm:flex-none"
+                    >
+                      <Eraser className="h-4 w-4 mr-2" /> Clear Vault
+                    </Button>
+                  )}
+                </div>
               </div>
               <Card className="glass-card border-none overflow-hidden">
                 <ScrollArea className="h-[500px] md:h-[600px] p-4 sm:p-8">
