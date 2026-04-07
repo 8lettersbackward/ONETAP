@@ -1053,6 +1053,10 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb) return;
+            if (buddyForm.phoneNumber.length !== 11) {
+              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
+              return;
+            }
             setRegisterLoading(true);
             const buddyId = `BUDDY-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
             set(ref(rtdb, `users/${user.uid}/buddies/${buddyId}`), { ...buddyForm, id: buddyId, registeredAt: Date.now() })
@@ -1069,8 +1073,15 @@ export default function DashboardPage() {
               <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
+              <Input 
+                value={buddyForm.phoneNumber} 
+                onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
+                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
+                maxLength={11}
+                placeholder="e.g. 09123456789"
+                required 
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
@@ -1099,6 +1110,10 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
+            if (buddyForm.phoneNumber.length !== 11) {
+              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
+              return;
+            }
             setRegisterLoading(true);
             update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), buddyForm)
               .then(() => {
@@ -1114,8 +1129,14 @@ export default function DashboardPage() {
               <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
+              <Input 
+                value={buddyForm.phoneNumber} 
+                onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
+                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
+                maxLength={11}
+                required 
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
@@ -1144,6 +1165,10 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb) return;
+            if (nodeForm.phoneNumber && nodeForm.phoneNumber.length !== 11) {
+              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
+              return;
+            }
             setRegisterLoading(true);
             const nodeId = nodeForm.hardwareId || `NODE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
             set(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), { ...nodeForm, id: nodeId, status: 'online', registeredAt: Date.now() })
@@ -1164,8 +1189,14 @@ export default function DashboardPage() {
               <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-              <Input value={nodeForm.phoneNumber} onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
+              <Input 
+                value={nodeForm.phoneNumber} 
+                onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
+                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
+                maxLength={11}
+                placeholder="e.g. 09123456789"
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Initial Thermal Threshold (°C)</Label>
@@ -1198,6 +1229,10 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
+            if (nodeForm.phoneNumber && nodeForm.phoneNumber.length !== 11) {
+              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
+              return;
+            }
             setRegisterLoading(true);
             update(ref(rtdb, `users/${user.uid}/nodes/${itemToEdit.id}`), nodeForm)
               .then(() => {
@@ -1222,8 +1257,13 @@ export default function DashboardPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-              <Input value={nodeForm.phoneNumber} onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
+              <Input 
+                value={nodeForm.phoneNumber} 
+                onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
+                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
+                maxLength={11}
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Thermal Threshold (°C)</Label>
@@ -1343,7 +1383,7 @@ export default function DashboardPage() {
             <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 border-primary/10">Abort</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               if (!user || !itemToDelete) return;
-              const path = itemToDelete.type === 'buddy' ? `users/${user.uid}/buddies/${itemToDelete.id}` : `users/${user.uid}/buddies/${itemToDelete.id}`;
+              const path = itemToDelete.type === 'buddy' ? `users/${user.uid}/buddies/${itemToDelete.id}` : `users/${user.uid}/nodes/${itemToDelete.id}`;
               const name = itemToDelete.nodeName || itemToDelete.name;
               remove(ref(rtdb, path)).then(() => {
                 logAction(`Purged asset from network: ${name} (${itemToDelete.type})`);
