@@ -81,8 +81,10 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
       
       // Force a resize check for responsiveness in dialogs
       setTimeout(() => {
-        mapInstance.current?.invalidateSize();
-      }, 250);
+        if (mapInstance.current) {
+          mapInstance.current.invalidateSize();
+        }
+      }, 500);
     } catch (error) {
       console.warn("Leaflet Map Error:", error);
     }
@@ -97,7 +99,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
 
   if (!isValid) {
     return (
-      <div className="h-[300px] md:h-[420px] w-full rounded-xl bg-muted/10 flex flex-col items-center justify-center border-2 border-dashed border-primary/10">
+      <div className="h-[250px] md:h-[350px] w-full rounded-xl bg-muted/10 flex flex-col items-center justify-center border-2 border-dashed border-primary/10">
         <div className="p-8 bg-white/50 rounded-full mb-4">
            <div className="h-10 w-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
         </div>
@@ -107,7 +109,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
   }
 
   return (
-    <div className="relative h-[300px] md:h-[420px] w-full rounded-xl overflow-hidden group">
+    <div className="relative h-[250px] md:h-[350px] w-full rounded-xl overflow-hidden group border border-primary/5">
       <div 
         ref={mapRef} 
         className="h-full w-full z-10"
@@ -117,9 +119,9 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
         <Button 
           size="icon" 
           variant="secondary" 
-          className="h-10 w-10 rounded-xl shadow-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white hover:bg-white"
+          className="h-10 w-10 rounded-xl shadow-xl border border-white/20 opacity-90 hover:opacity-100 transition-opacity duration-300 bg-white hover:bg-white"
           onClick={resetView}
-          title="Recenter Map"
+          title="Recenter Signal"
         >
           <Target className="h-5 w-5 text-primary" />
         </Button>
@@ -142,6 +144,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
           margin-left: 16px !important;
           margin-top: 16px !important;
+          z-index: 1000 !important;
         }
         .leaflet-control-zoom-in, .leaflet-control-zoom-out {
           background-color: white !important;

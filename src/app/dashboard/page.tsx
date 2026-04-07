@@ -259,7 +259,6 @@ export default function DashboardPage() {
       const alert = snapshot.val();
       const alertId = snapshot.key;
 
-      // SOS ALERT is strictly for the User side
       if (alert && alert.type === "sos" && userRole === 'user' && alertId !== lastProcessedSosRef.current) {
         lastProcessedSosRef.current = alertId;
         const createdAt = alert.createdAt || alert.timestamp || 0;
@@ -392,7 +391,6 @@ export default function DashboardPage() {
       .then(() => {
         toast({ title: "Link Dispatched", description: `Tactical link request sent to user associated with hardware signature.` });
         
-        // Push notification to target
         const targetNotifRef = ref(rtdb, `users/${targetUser.uid}/notifications`);
         push(targetNotifRef, {
           message: `Incoming tactical link request from ${user.email}`,
@@ -441,7 +439,6 @@ export default function DashboardPage() {
     update(ref(rtdb), updates).then(() => {
       toast({ title: "Track Request Sent", description: "Awaiting user authorization." });
       
-      // Push specific track request notification
       const targetNotifRef = ref(rtdb, `users/${link.uid}/notifications`);
       push(targetNotifRef, {
         message: `Tactical telemetry track request initiated by Guardian ${user.email}`,
@@ -1121,6 +1118,16 @@ export default function DashboardPage() {
                            </Button>
                         </div>
                       </div>
+                      
+                      {node.trackRequest && isValidCoordinate(node.latitude) && isValidCoordinate(node.longitude) && (
+                        <div className="rounded-2xl overflow-hidden border border-accent/10">
+                           <SOSMap 
+                             latitude={node.latitude} 
+                             longitude={node.longitude} 
+                             label={`${node.nodeName} - LIVE`} 
+                           />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1141,7 +1148,7 @@ export default function DashboardPage() {
       <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
         <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 md:p-8 border-b border-primary/5">
-            <DialogTitle className="text-md sm:text-lg md:text-xl font-bold uppercase tracking-widest text-secondary truncate min-w-0">Spatial Coordinate Intercept</DialogTitle>
+            <DialogTitle className="text-md sm:text-lg md:text-xl font-bold uppercase tracking-widest text-secondary break-words min-w-0">Spatial Coordinate Intercept</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden relative">
              <ScrollArea className="h-full">
@@ -1177,7 +1184,7 @@ export default function DashboardPage() {
                <div className="flex items-center gap-4 overflow-hidden flex-1 min-w-0">
                   <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive animate-bounce flex-shrink-0" />
                   <div className="overflow-hidden min-w-0">
-                    <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold text-destructive uppercase tracking-tighter truncate min-w-0">Tactical SOS Intercept</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold text-destructive uppercase tracking-tighter break-words min-w-0">Tactical SOS Intercept</DialogTitle>
                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 truncate">Master Signal: {activeSosAlert?.nodeName || 'Hardware Node'}</p>
                   </div>
                </div>
