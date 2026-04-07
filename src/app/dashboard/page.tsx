@@ -157,8 +157,9 @@ export default function DashboardPage() {
       const profileRef = ref(rtdb, `users/${user.uid}/profile`);
       get(profileRef).then(snapshot => {
         const profile = snapshot.val();
-        setUserRole(profile?.role || 'user');
-        if (profile?.role === 'guardian') {
+        const role = profile?.role || 'user';
+        setUserRole(role);
+        if (role === 'guardian') {
           setActiveTab('guardian');
         } else {
           setActiveTab('buddies');
@@ -189,21 +190,22 @@ export default function DashboardPage() {
   }, [user, rtdb]);
 
   useEffect(() => {
-    if (itemToEdit && activeTab === 'buddies') {
-      setBuddyForm({
-        name: itemToEdit.name || '',
-        phoneNumber: itemToEdit.phoneNumber || '',
-        groups: itemToEdit.groups || []
-      });
-    }
-    if (itemToEdit && activeTab === 'nodes') {
-      setNodeForm({
-        nodeName: itemToEdit.nodeName || '',
-        hardwareId: itemToEdit.hardwareId || '',
-        phoneNumber: itemToEdit.phoneNumber || '',
-        temperature: itemToEdit.temperature || 24,
-        targetGroups: itemToEdit.targetGroups || []
-      });
+    if (itemToEdit && (activeTab === 'buddies' || activeTab === 'nodes')) {
+      if (activeTab === 'buddies') {
+        setBuddyForm({
+          name: itemToEdit.name || '',
+          phoneNumber: itemToEdit.phoneNumber || '',
+          groups: itemToEdit.groups || []
+        });
+      } else {
+        setNodeForm({
+          nodeName: itemToEdit.nodeName || '',
+          hardwareId: itemToEdit.hardwareId || '',
+          phoneNumber: itemToEdit.phoneNumber || '',
+          temperature: itemToEdit.temperature || 24,
+          targetGroups: itemToEdit.targetGroups || []
+        });
+      }
     }
   }, [itemToEdit, activeTab]);
 
@@ -485,8 +487,8 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#e1f1fd] text-[#12086F]">
-      <aside className="w-full md:w-64 bg-white/50 border-r border-primary/10 p-6 md:h-screen sticky top-0 backdrop-blur-md">
-        <div className="space-y-12">
+      <aside className="w-full md:w-64 bg-white/50 border-r border-primary/10 p-4 sm:p-6 md:h-screen sticky top-0 backdrop-blur-md z-40">
+        <div className="space-y-8 md:space-y-12">
           <div className="flex items-center gap-4">
             <Avatar className="h-10 w-10 border-2 border-primary">
               <AvatarFallback className="bg-primary/20 text-primary font-bold">
@@ -498,25 +500,25 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground truncate uppercase tracking-widest">{userRole}</p>
             </div>
           </div>
-          <nav className="space-y-4">
+          <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-2 md:gap-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as TabType)}
                 className={cn(
-                  "w-full flex items-center gap-4 px-4 py-3.5 transition-all rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] relative",
+                  "flex items-center gap-3 px-3 py-3 transition-all rounded-xl text-[9px] md:text-[10px] font-bold uppercase tracking-widest relative",
                   activeTab === item.id 
                     ? "bg-primary text-white shadow-lg shadow-primary/20" 
                     : "hover:bg-primary/5 text-muted-foreground"
                 )}
               >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
+                <item.icon className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
                 {item.id === 'my-guardians' && pendingRequests.length > 0 && (
-                  <span className="absolute top-2 right-2 h-2 w-2 bg-destructive rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                 )}
                 {item.id === 'notifications' && notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 h-2 w-2 bg-secondary rounded-full animate-pulse shadow-[0_0_8px_rgba(72,149,239,0.6)]" />
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-secondary rounded-full animate-pulse shadow-[0_0_8px_rgba(72,149,239,0.6)]" />
                 )}
               </button>
             ))}
@@ -524,36 +526,36 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-16 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-16 overflow-y-auto w-full">
+        <div className="max-w-6xl mx-auto w-full">
           {activeTab === 'guardian' && userRole === 'guardian' && (
-            <div className="space-y-10">
-              <div className="flex items-center justify-between">
+            <div className="space-y-8 md:space-y-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">LINKED USERS</h1>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Tactical Personnel Recruitment</p>
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">LINKED USERS</h1>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-1 md:mt-2">Tactical Personnel Recruitment</p>
                 </div>
-                <Badge className="bg-secondary/20 text-secondary border-none px-4 py-1.5 text-[9px] uppercase font-bold rounded-full">
+                <Badge className="bg-secondary/20 text-secondary border-none px-4 py-1.5 text-[9px] uppercase font-bold rounded-full w-fit">
                   Scan Active
                 </Badge>
               </div>
 
-              <Card className="glass-card border-none p-10 shadow-2xl">
+              <Card className="glass-card border-none p-6 md:p-10 shadow-2xl">
                 <div className="space-y-8">
                   <div className="space-y-4">
                     <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Precision Search (Email)</Label>
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <Input 
                         placeholder="e.g. cristian@gmail.com" 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearchManual()}
-                        className="bg-primary/5 border-primary/10 rounded-2xl h-16 text-sm font-bold flex-1 px-6 shadow-inner"
+                        className="bg-primary/5 border-primary/10 rounded-2xl h-14 md:h-16 text-sm font-bold flex-1 px-6 shadow-inner"
                       />
                       <Button 
                         onClick={handleSearchManual} 
                         disabled={registerLoading || !searchQuery}
-                        className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-16 px-12 bg-secondary hover:bg-secondary/90 text-white"
+                        className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-14 md:h-16 px-12 bg-secondary hover:bg-secondary/90 text-white"
                       >
                         {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><UserPlus className="h-5 w-5 mr-3" /> Intercept</>}
                       </Button>
@@ -564,11 +566,11 @@ export default function DashboardPage() {
 
               <div className="space-y-6 pt-10 border-t border-primary/10">
                 <h2 className="text-xl font-bold tracking-tight text-[#12086F]">ACTIVE PROTOCOLS</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   {activeLinks.map(link => (
-                    <Card key={link.uid} className="glass-card border-none group transition-all p-8 border-l-4 border-l-secondary">
+                    <Card key={link.uid} className="glass-card border-none group transition-all p-6 md:p-8 border-l-4 border-l-secondary">
                       <div className="flex justify-between items-start mb-4">
-                        <div>
+                        <div className="max-w-[70%]">
                           <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
                         </div>
                         <Badge className="bg-secondary text-white text-[8px] px-2 py-0.5 rounded-md">LINKED</Badge>
@@ -609,11 +611,11 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'my-guardians' && userRole === 'user' && (
-            <div className="space-y-10">
-              <div className="flex items-center justify-between">
+            <div className="space-y-8 md:space-y-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">MY GUARDIANS</h1>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Authorization Protocols</p>
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">MY GUARDIANS</h1>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-1 md:mt-2">Authorization Protocols</p>
                 </div>
               </div>
 
@@ -624,9 +626,9 @@ export default function DashboardPage() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">No incoming link requests</p>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {pendingRequests.map(request => (
-                      <Card key={request.uid} className="glass-card border-none p-8 space-y-6 bg-secondary/5 border-l-4 border-l-destructive animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <Card key={request.uid} className="glass-card border-none p-6 md:p-8 space-y-6 bg-secondary/5 border-l-4 border-l-destructive animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div>
                           <p className="text-lg font-bold text-[#12086F] truncate">{request.email.split('@')[0]}</p>
                           <Badge className="mt-3 bg-secondary text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">Identity: Guardian</Badge>
@@ -650,9 +652,9 @@ export default function DashboardPage() {
                 {links.filter(l => l.trackingRequest === 'pending').length === 0 ? (
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No pending signal track requests.</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {links.filter(l => l.trackingRequest === 'pending').map(link => (
-                      <Card key={link.uid} className="glass-card border-none p-8 bg-accent/5 border-l-4 border-l-accent">
+                      <Card key={link.uid} className="glass-card border-none p-6 md:p-8 bg-accent/5 border-l-4 border-l-accent">
                         <div className="flex justify-between items-start mb-6">
                           <div>
                             <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
@@ -679,17 +681,17 @@ export default function DashboardPage() {
                 {activeLinks.length === 0 ? (
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active guardian links synchronized.</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {activeLinks.map(link => (
-                      <Card key={link.uid} className="glass-card border-none p-8 border-l-4 border-l-secondary">
+                      <Card key={link.uid} className="glass-card border-none p-6 md:p-8 border-l-4 border-l-secondary">
                         <div className="flex justify-between items-start">
-                          <div>
+                          <div className="max-w-[80%]">
                             <p className="text-lg font-bold text-[#12086F] truncate">{link.email.split('@')[0]}</p>
                             {link.trackingRequest === 'approved' && (
-                              <Badge className="mt-2 bg-accent/20 text-accent border-none text-[8px] font-bold px-2">HARDWARE TRACKING ACTIVE</Badge>
+                              <Badge className="mt-2 bg-accent/20 text-accent border-none text-[8px] font-bold px-2 block w-fit">HARDWARE TRACKING ACTIVE</Badge>
                             )}
                           </div>
-                          <UserCheck className="h-5 w-5 text-secondary" />
+                          <UserCheck className="h-5 w-5 text-secondary flex-shrink-0" />
                         </div>
                         <div className="mt-6 space-y-3">
                           {link.trackingRequest === 'approved' && (
@@ -718,32 +720,32 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'buddies' && userRole !== 'guardian' && (
-            <div className="space-y-10">
-              <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE BUDDIES</h1>
-                <div className="flex gap-4">
-                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-primary text-white">
+            <div className="space-y-8 md:space-y-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE BUDDIES</h1>
+                <div className="flex flex-wrap gap-4">
+                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 bg-primary hover:bg-primary text-white flex-1 sm:flex-none">
                     <UserPlus className="h-4 w-4 mr-2" /> Enlist
                   </Button>
-                  <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border-primary/20 hover:bg-primary/5">
+                  <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border-primary/20 hover:bg-primary/5 flex-1 sm:flex-none">
                     <Layers className="h-4 w-4 mr-2" /> Protocols
                   </Button>
                 </div>
               </div>
 
               {buddies.length === 0 ? (
-                <Card className="glass-card p-24 text-center border-dashed border-primary/40 bg-white/40">
+                <Card className="glass-card p-12 md:p-24 text-center border-dashed border-primary/40 bg-white/40">
                   <Smartphone className="h-12 w-12 text-primary/20 mx-auto mb-6" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Standby Mode: No Enlisted Buddies</p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   {buddies.map(buddy => (
                     <Card key={buddy.id} className="glass-card border-none group transition-all">
-                      <CardHeader className="p-8">
+                      <CardHeader className="p-6 md:p-8">
                         <div className="flex justify-between items-start mb-6">
-                          <div>
-                            <p className="text-xl font-bold text-[#12086F]">{buddy.name}</p>
+                          <div className="max-w-[90%]">
+                            <p className="text-xl font-bold text-[#12086F] truncate">{buddy.name}</p>
                             <p className="text-[10px] font-mono text-secondary uppercase tracking-widest mt-1">{buddy.phoneNumber}</p>
                           </div>
                         </div>
@@ -753,11 +755,11 @@ export default function DashboardPage() {
                           ))}
                         </div>
                       </CardHeader>
-                      <CardContent className="p-8 pt-0">
-                        <div className="flex gap-4 pt-6 border-t border-primary/10">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                      <CardContent className="p-6 md:p-8 pt-0">
+                        <div className="flex flex-wrap gap-2 pt-6 border-t border-primary/10">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 min-w-[70px]" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white min-w-[70px]" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-destructive/5" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -768,34 +770,34 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'nodes' && userRole !== 'guardian' && (
-            <div className="space-y-10">
-              <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE NODES</h1>
-                <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-primary text-white">
+            <div className="space-y-8 md:space-y-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE NODES</h1>
+                <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-primary text-white w-full sm:w-auto">
                   <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
                 </Button>
               </div>
 
               {nodes.length === 0 ? (
-                <Card className="glass-card p-24 text-center border-dashed border-primary/40 bg-white/40">
+                <Card className="glass-card p-12 md:p-24 text-center border-dashed border-primary/40 bg-white/40">
                   <Cpu className="h-12 w-12 text-primary/20 mx-auto mb-6" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Systems Offline: No Active Nodes</p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   {nodes.map(node => (
                     <Card key={node.id} className="glass-card border-none group transition-all">
-                      <CardHeader className="p-8">
+                      <CardHeader className="p-6 md:p-8">
                         <div className="flex justify-between items-center mb-4">
-                          <div>
-                            <p className="text-xl font-bold text-[#12086F]">{node.nodeName}</p>
+                          <div className="max-w-[80%]">
+                            <p className="text-xl font-bold text-[#12086F] truncate">{node.nodeName}</p>
                             {node.phoneNumber && <p className="text-[9px] font-mono text-secondary mt-1 uppercase tracking-widest">{node.phoneNumber}</p>}
                           </div>
-                          <div className={cn("h-3 w-3 rounded-full", node.status === 'online' ? 'bg-secondary shadow-[0_0_15px_rgba(72,149,239,0.4)]' : 'bg-muted')} />
+                          <div className={cn("h-3 w-3 rounded-full flex-shrink-0", node.status === 'online' ? 'bg-secondary shadow-[0_0_15px_rgba(72,149,239,0.4)]' : 'bg-muted')} />
                         </div>
-                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em]">ID: {node.hardwareId}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em] truncate">ID: {node.hardwareId}</p>
                       </CardHeader>
-                      <CardContent className="p-8 pt-0 space-y-6">
+                      <CardContent className="p-6 md:p-8 pt-0 space-y-6">
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
                             <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 flex items-center gap-2"><Thermometer className="h-3 w-3" /> Thermal Threshold</Label>
@@ -819,10 +821,10 @@ export default function DashboardPage() {
                             <Badge key={g} className="bg-primary/10 border-none text-primary text-[9px] uppercase font-bold px-3">{g}</Badge>
                           ))}
                         </div>
-                        <div className="flex flex-wrap gap-4 pt-6 border-t border-primary/10">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                        <div className="flex flex-wrap gap-2 pt-6 border-t border-primary/10">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 min-w-[70px]" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white min-w-[70px]" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-destructive/5" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -833,52 +835,52 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'notifications' && (
-            <div className="space-y-10">
-              <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
+            <div className="space-y-8 md:space-y-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
                 {notifications.length > 0 && (
                   <Button 
                     variant="ghost" 
                     onClick={handleClearNotifications} 
-                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-primary/10 hover:bg-destructive/10 text-destructive"
+                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-primary/10 hover:bg-destructive/10 text-destructive w-full sm:w-auto"
                   >
                     <Eraser className="h-4 w-4 mr-2" /> Clear Vault
                   </Button>
                 )}
               </div>
               <Card className="glass-card border-none">
-                <ScrollArea className="h-[600px] p-8">
+                <ScrollArea className="h-[500px] md:h-[600px] p-4 sm:p-8">
                   {notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[400px] opacity-10">
+                    <div className="flex flex-col items-center justify-center h-[300px] md:h-[400px] opacity-10">
                       <Bell className="h-16 w-16 mb-6" />
                       <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Notification Vault Clear</p>
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className={cn("mb-8 pb-8 border-b border-primary/5 last:border-0 last:mb-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", n.type === 'link_request' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex gap-4 items-center">
-                            {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />}
-                            {n.type === 'link_request' && <UserPlus className="h-5 w-5 text-secondary" />}
-                            <p className={cn("text-md font-bold tracking-wide", n.type === 'sos' && "text-destructive uppercase", n.type === 'link_request' && "text-secondary")}>
+                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", n.type === 'link_request' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+                          <div className="flex gap-4 items-center overflow-hidden">
+                            {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse flex-shrink-0" />}
+                            {n.type === 'link_request' && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
+                            <p className={cn("text-sm md:text-md font-bold tracking-wide truncate", n.type === 'sos' && "text-destructive uppercase", n.type === 'link_request' && "text-secondary")}>
                               {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
                             </p>
                           </div>
-                          <Badge variant="outline" className={cn("text-[9px] font-bold px-3 bg-white/50", n.type === 'sos' ? "border-destructive/40 text-destructive" : "border-secondary/40 text-secondary")}>
+                          <Badge variant="outline" className={cn("text-[8px] md:text-[9px] font-bold px-3 bg-white/50 w-fit", n.type === 'sos' ? "border-destructive/40 text-destructive" : "border-secondary/40 text-secondary")}>
                             {safeFormatTime(n.createdAt)}
                           </Badge>
                         </div>
                         {n.type === 'sos' && (
-                          <div className="space-y-4 mb-4 ml-9">
+                          <div className="space-y-4 mb-4 ml-0 sm:ml-9">
                             <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>
                             <p className="text-xs font-medium opacity-60 flex items-center gap-2"><MapPin className="h-3 w-3" /> {n.place || 'Location Coordinates Acquired'}</p>
-                            <div className="flex gap-3">
-                               <Button size="sm" onClick={() => { setActiveSosAlert(n); setIsSosMapOpen(true); }} className="h-8 rounded-lg bg-destructive text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-destructive/20 text-white">Tactical Map</Button>
+                            <div className="flex flex-wrap gap-3">
+                               <Button size="sm" onClick={() => { setActiveSosAlert(n); setIsSosMapOpen(true); }} className="h-8 rounded-lg bg-destructive text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-destructive/20 text-white flex-1 sm:flex-none">Tactical Map</Button>
                                {isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    className="h-8 rounded-lg text-[9px] font-bold uppercase tracking-widest px-6 border-destructive/20 text-destructive hover:bg-destructive/5"
+                                    className="h-8 rounded-lg text-[9px] font-bold uppercase tracking-widest px-6 border-destructive/20 text-destructive hover:bg-destructive/5 flex-1 sm:flex-none"
                                     onClick={() => {
                                       setMapNotification(n);
                                       setIsMapModalOpen(true);
@@ -891,22 +893,22 @@ export default function DashboardPage() {
                           </div>
                         )}
                         {n.type === 'link_request' && (
-                          <div className="mt-4 ml-9">
+                          <div className="mt-4 ml-0 sm:ml-9">
                              <Button 
                                size="sm" 
                                onClick={() => setActiveTab('my-guardians')} 
-                               className="h-8 rounded-lg bg-secondary text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-secondary/20 text-white"
+                               className="h-8 rounded-lg bg-secondary text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-secondary/20 text-white w-full sm:w-auto"
                              >
                                Review Request
                              </Button>
                           </div>
                         )}
-                        {!n.type || (n.type !== 'sos' && n.type !== 'link_request') && isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
-                          <div className="ml-9 mb-4">
+                        {(!n.type || (n.type !== 'sos' && n.type !== 'link_request')) && isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
+                          <div className="ml-0 sm:ml-9 mb-4">
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 border-primary/20 hover:bg-primary/5"
+                              className="h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 border-primary/20 hover:bg-primary/5 w-full sm:w-auto"
                               onClick={() => {
                                 setMapNotification(n);
                                 setIsMapModalOpen(true);
@@ -916,7 +918,7 @@ export default function DashboardPage() {
                             </Button>
                           </div>
                         )}
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold ml-9">{safeFormatDate(n.createdAt)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold ml-0 sm:ml-9">{safeFormatDate(n.createdAt)}</p>
                       </div>
                     ))
                   )}
@@ -926,9 +928,9 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-md space-y-10">
-              <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">PROFILE SETTINGS</h1>
-              <Card className="glass-card border-none p-10 space-y-8">
+            <div className="max-w-md w-full space-y-8 md:space-y-10 mx-auto lg:mx-0">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">PROFILE SETTINGS</h1>
+              <Card className="glass-card border-none p-6 md:p-10 space-y-8">
                 <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
                   <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Auth Identification</p>
                   <p className="text-[10px] font-mono opacity-60 truncate">{user.uid}</p>
@@ -945,35 +947,35 @@ export default function DashboardPage() {
       </main>
 
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
-        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] max-w-4xl p-0 overflow-hidden">
-          <DialogHeader className="p-10 border-b border-accent/5 bg-accent/5">
+        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 md:p-10 border-b border-accent/5 bg-accent/5">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
-                  <Radar className="h-8 w-8 text-accent animate-pulse" />
-                  <DialogTitle className="text-xl font-bold uppercase tracking-widest text-[#12086F]">Asset Control Hub</DialogTitle>
+                  <Radar className="h-6 w-6 md:h-8 md:w-8 text-accent animate-pulse" />
+                  <DialogTitle className="text-md md:text-xl font-bold uppercase tracking-widest text-[#12086F]">Asset Control Hub</DialogTitle>
                </div>
              </div>
           </DialogHeader>
           <div className="p-0">
-            <ScrollArea className="max-h-[600px]">
+            <ScrollArea className="max-h-[60vh] md:max-h-[600px]">
               {activeTrackedNodes.length === 0 ? (
-                <div className="p-24 text-center">
+                <div className="p-12 md:p-24 text-center">
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active assets reported.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-accent/5">
                   {activeTrackedNodes.map(node => (
-                    <div key={node.id} className="p-10 space-y-6">
-                      <div className="flex justify-between items-center">
-                        <div>
-                           <p className="text-lg font-bold text-[#12086F]">{node.nodeName}</p>
-                           <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">ID: {node.hardwareId}</p>
+                    <div key={node.id} className="p-6 md:p-10 space-y-6">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="max-w-full overflow-hidden">
+                           <p className="text-lg font-bold text-[#12086F] truncate">{node.nodeName}</p>
+                           <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest truncate">ID: {node.hardwareId}</p>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="w-full sm:w-auto flex items-center gap-4">
                            <Button 
                              onClick={() => handleToggleNodeTrack(node.id, node.trackRequest || false)}
                              className={cn(
-                               "h-12 px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all",
+                               "h-12 px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all w-full sm:w-auto",
                                node.trackRequest 
                                  ? "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20" 
                                  : "bg-accent hover:bg-accent text-white shadow-lg shadow-accent/20"
@@ -989,7 +991,7 @@ export default function DashboardPage() {
               )}
             </ScrollArea>
           </div>
-          <div className="p-10 bg-white">
+          <div className="p-6 md:p-10 bg-white">
             <Button 
               onClick={() => setIsTelemetryOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
@@ -1001,15 +1003,16 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] max-w-3xl p-0 overflow-hidden">
-          <DialogHeader className="p-8 border-b border-primary/5">
-            <DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary">Spatial Coordinate Intercept</DialogTitle>
+        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 md:p-8 border-b border-primary/5">
+            <DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary">Spatial Coordinate Intercept</DialogTitle>
           </DialogHeader>
           <div className="p-0">
             {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
               <iframe
                 width="100%"
-                height="400"
+                height="300"
+                className="md:h-[400px]"
                 style={{ border: 0 }}
                 loading="lazy"
                 allowFullScreen
@@ -1018,7 +1021,7 @@ export default function DashboardPage() {
               ></iframe>
             )}
           </div>
-          <div className="p-8">
+          <div className="p-6 md:p-8">
              <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white">
                Acknowledge Signal
              </Button>
@@ -1027,21 +1030,21 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
-        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-10 border-b border-destructive/5 bg-destructive/5">
-             <div className="flex justify-between items-center">
-               <div className="flex items-center gap-4">
-                  <AlertTriangle className="h-8 w-8 text-destructive animate-bounce" />
-                  <div>
-                    <DialogTitle className="text-2xl font-bold text-destructive uppercase tracking-tighter">Tactical SOS Intercept</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Master Signal: {activeSosAlert?.nodeName || 'Hardware Node'}</p>
+        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 md:p-10 border-b border-destructive/5 bg-destructive/5">
+             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+               <div className="flex items-center gap-4 overflow-hidden">
+                  <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive animate-bounce flex-shrink-0" />
+                  <div className="overflow-hidden">
+                    <DialogTitle className="text-xl md:text-2xl font-bold text-destructive uppercase tracking-tighter truncate">Tactical SOS Intercept</DialogTitle>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 truncate">Master Signal: {activeSosAlert?.nodeName || 'Hardware Node'}</p>
                   </div>
                </div>
                <Badge className="bg-destructive text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl animate-pulse">Critical Alert</Badge>
              </div>
           </DialogHeader>
-          <div className="p-10 space-y-8">
-            <div className="grid grid-cols-2 gap-8">
+          <div className="p-6 md:p-10 space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
                <div className="space-y-2">
                  <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
                  <p className="text-sm font-bold text-destructive">{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
@@ -1058,9 +1061,9 @@ export default function DashboardPage() {
                   longitude={activeSosAlert?.longitude || 0}
                   label={activeSosAlert?.nodeName}
                />
-               <div className="absolute bottom-6 left-6 right-6 z-[1000] glass-card p-4 rounded-xl flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-destructive" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest flex-1">{activeSosAlert?.place || 'Coordinates Identified'}</p>
+               <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 z-[1000] glass-card p-3 md:p-4 rounded-xl flex items-center gap-3">
+                  <MapPin className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
+                  <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex-1 truncate">{activeSosAlert?.place || 'Coordinates Identified'}</p>
                </div>
             </div>
 
@@ -1075,8 +1078,8 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Enlist Buddy</DialogTitle></DialogHeader>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10">
+          <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6">Enlist Buddy</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb) return;
@@ -1101,14 +1104,14 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 md:p-6 bg-primary/5 rounded-2xl border border-primary/10">
                 {buddyGroups.map(g => (
                   <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
                       const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
                       setBuddyForm({...buddyForm, groups: updated});
                     }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{g}</span>
                   </div>
                 ))}
               </div>
@@ -1121,8 +1124,8 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Recalibrate Buddy Protocol</DialogTitle></DialogHeader>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10">
+          <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6">Recalibrate Buddy Protocol</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
@@ -1146,14 +1149,14 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 md:p-6 bg-primary/5 rounded-2xl border border-primary/10">
                 {buddyGroups.map(g => (
                   <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
                       const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
                       setBuddyForm({...buddyForm, groups: updated});
                     }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{g}</span>
                   </div>
                 ))}
               </div>
@@ -1166,8 +1169,8 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm Node</DialogTitle></DialogHeader>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10">
+          <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm Node</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb) return;
@@ -1200,14 +1203,14 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Broadcast Targets</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 md:p-6 bg-primary/5 rounded-2xl border border-primary/10">
                 {buddyGroups.map(g => (
                   <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={nodeForm.targetGroups.includes(g)} onCheckedChange={() => {
                       const updated = nodeForm.targetGroups.includes(g) ? nodeForm.targetGroups.filter(x => x !== g) : [...nodeForm.targetGroups, g];
                       setNodeForm({...nodeForm, targetGroups: updated});
                     }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{g}</span>
                   </div>
                 ))}
               </div>
@@ -1220,8 +1223,8 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Calibrate Node Hardware</DialogTitle></DialogHeader>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10">
+          <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6">Calibrate Node Hardware</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
@@ -1258,14 +1261,14 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Broadcast Targets</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 md:p-6 bg-primary/5 rounded-2xl border border-primary/10">
                 {buddyGroups.map(g => (
                   <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={nodeForm.targetGroups.includes(g)} onCheckedChange={() => {
                       const updated = nodeForm.targetGroups.includes(g) ? nodeForm.targetGroups.filter(x => x !== g) : [...nodeForm.targetGroups, g];
                       setNodeForm({...nodeForm, targetGroups: updated});
                     }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{g}</span>
                   </div>
                 ))}
               </div>
@@ -1278,42 +1281,42 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isViewItemDialogOpen} onOpenChange={setIsViewItemDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Asset Overview</DialogTitle></DialogHeader>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10">
+          <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6">Asset Overview</DialogTitle></DialogHeader>
           {itemToView && (
-            <div className="space-y-8">
-              <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Descriptor</span>
-                  <span className="text-sm font-bold text-[#12086F]">{itemToView.nodeName || itemToView.name}</span>
+            <div className="space-y-6 md:space-y-8">
+              <div className="p-6 md:p-8 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest flex-shrink-0">Descriptor</span>
+                  <span className="text-sm font-bold text-[#12086F] truncate">{itemToView.nodeName || itemToView.name}</span>
                 </div>
                 {itemToView.phoneNumber && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Phone Number</span>
-                    <span className="text-[10px] font-mono text-secondary">{itemToView.phoneNumber}</span>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest flex-shrink-0">Phone Number</span>
+                    <span className="text-[10px] font-mono text-secondary truncate">{itemToView.phoneNumber}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">{itemToView.hardwareId ? 'Hardware ID' : 'Internal ID'}</span>
-                  <span className="text-[10px] font-mono text-secondary">{itemToView.hardwareId || itemToView.id}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest flex-shrink-0">{itemToView.hardwareId ? 'Hardware ID' : 'Internal ID'}</span>
+                  <span className="text-[10px] font-mono text-secondary truncate">{itemToView.hardwareId || itemToView.id}</span>
                 </div>
                 {itemToView.temperature !== undefined && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Thermal Threshold</span>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest flex-shrink-0">Thermal Threshold</span>
                     <span className="text-[10px] font-mono text-secondary">{itemToView.temperature}°C</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Current Status</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest flex-shrink-0">Current Status</span>
                   <Badge className={cn("text-[9px] uppercase font-bold", itemToView.status === 'online' ? "bg-secondary/20 text-secondary" : "bg-muted/20 text-muted-foreground")}>{itemToView.status || 'Active'}</Badge>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Link Created</span>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 sm:gap-2">
+                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest flex-shrink-0">Link Created</span>
                   <span className="text-[10px] opacity-60 font-bold">{safeFormatDate(itemToView.registeredAt)} {safeFormatTime(itemToView.registeredAt)}</span>
                 </div>
               </div>
-              <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary mb-6">Authorized Protocols</p>
+              <div className="p-6 md:p-8 bg-primary/5 rounded-3xl border border-primary/10">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary mb-4 md:mb-6">Authorized Protocols</p>
                 <div className="flex flex-wrap gap-2">
                   {(itemToView.targetGroups || itemToView.groups || []).map((g: string) => (
                     <Badge key={g} variant="outline" className="bg-white/50 border-primary/10 text-[9px] px-4 py-1.5 opacity-80 uppercase font-bold text-primary">{g}</Badge>
@@ -1326,9 +1329,9 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isManageGroupsDialogOpen} onOpenChange={setIsManageGroupsDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Safety Protocols</DialogTitle></DialogHeader>
-          <div className="space-y-8">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10">
+          <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6">Safety Protocols</DialogTitle></DialogHeader>
+          <div className="space-y-6 md:space-y-8">
             <div className="flex gap-3">
               <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Protocol Name" className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold uppercase tracking-widest" />
               <Button onClick={() => {
@@ -1336,15 +1339,15 @@ export default function DashboardPage() {
                 push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name: newGroupName });
                 logAction(`Created new protocol group: ${newGroupName}`);
                 setNewGroupName("");
-              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-primary text-white"><PlusCircle className="h-6 w-6" /></Button>
+              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-primary text-white flex-shrink-0"><PlusCircle className="h-6 w-6" /></Button>
             </div>
             <ScrollArea className="h-64 pr-4">
               <div className="space-y-3">
                 {buddyGroups.map(g => (
                   <div key={g} className="p-5 bg-primary/5 rounded-2xl flex justify-between items-center group/item transition-all border border-transparent">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{g}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest truncate max-w-[70%]">{g}</span>
                     {!DEFAULT_BUDDY_GROUPS.includes(g) && (
-                      <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-destructive" onClick={() => {
+                      <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/5" onClick={() => {
                         const gId = Object.entries(customGroupsData || {}).find(([k, v]: any) => v.name === g)?.[0];
                         if (gId) {
                           remove(ref(rtdb, `users/${user.uid}/buddyGroups/${gId}`));
@@ -1361,13 +1364,13 @@ export default function DashboardPage() {
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] p-10">
+        <AlertDialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] p-6 md:p-10 w-[95vw] max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold uppercase tracking-widest text-destructive mb-4">Purge Asset?</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-destructive mb-4">Purge Asset?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm font-medium leading-relaxed">This asset will be permanently erased from the terminal hub and protocol networks.</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-8 gap-4">
-            <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 border-primary/10">Abort</AlertDialogCancel>
+          <AlertDialogFooter className="mt-8 flex flex-col sm:flex-row gap-4">
+            <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 border-primary/10 w-full sm:w-auto">Abort</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               if (!user || !itemToDelete) return;
               const path = itemToDelete.type === 'buddy' ? `users/${user.uid}/buddies/${itemToDelete.id}` : `users/${user.uid}/nodes/${itemToDelete.id}`;
@@ -1378,7 +1381,7 @@ export default function DashboardPage() {
                 setItemToDelete(null);
                 toast({ title: "Asset Purged" });
               });
-            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive text-white">Confirm Purge</AlertDialogAction>
+            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive text-white w-full sm:w-auto">Confirm Purge</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
