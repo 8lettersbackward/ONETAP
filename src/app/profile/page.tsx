@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useRtdb, useAuth } from "@/firebase";
@@ -11,8 +12,30 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile, signOut, updatePassword } from "firebase/auth";
-import { ref, set } from "firebase/database";
-import { Loader2, User as UserIcon, LogOut, IdCard, Mail, ArrowLeft, Lock, KeyRound } from "lucide-react";
+import { ref, set, remove } from "firebase/database";
+import { 
+  Loader2, 
+  User as UserIcon, 
+  LogOut, 
+  IdCard, 
+  Mail, 
+  ArrowLeft, 
+  Lock, 
+  KeyRound,
+  Trash2,
+  AlertTriangle
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -110,6 +133,21 @@ export default function ProfilePage() {
       }
     } finally {
       setUpdatingPassword(false);
+    }
+  };
+
+  const handlePurgeAccount = async () => {
+    if (!user || !rtdb) return;
+    setUpdating(true);
+    try {
+      const userRef = ref(rtdb, `users/${user.uid}`);
+      await remove(userRef);
+      toast({ title: "Master Purge Complete", description: "All tactical data has been decommissioned." });
+      signOut(auth).then(() => router.push("/login"));
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Purge Failed", description: error.message });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -252,6 +290,40 @@ export default function ProfilePage() {
                 </Button>
               </CardFooter>
             </form>
+          </Card>
+
+          <Card className="border-none shadow-2xl bg-white rounded-xl">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" /> Master Purge Protocol
+              </CardTitle>
+              <CardDescription className="text-[10px] uppercase text-muted-foreground">Irreversibly erase all tactical data from the network.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="p-6 bg-destructive/5 rounded-2xl border border-destructive/10">
+                 <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mb-2">Warning: Absolute Erasure</p>
+                 <p className="text-[10px] leading-relaxed opacity-60">Initiating this protocol will permanently wipe your Buddies, Nodes, Protocols, and Notifications from the database. This action cannot be undone.</p>
+              </div>
+            </CardContent>
+            <CardFooter className="pt-6 border-t border-white/10">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full h-16 bg-destructive hover:bg-destructive/90 uppercase font-bold tracking-[0.3em] text-xs shadow-2xl text-white">
+                    <Trash2 className="mr-2 h-4 w-4" /> ERASE TACTICAL FOOTPRINT
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-white border border-destructive/10 shadow-xl rounded-[2rem] p-10">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-xl font-bold uppercase tracking-widest text-destructive">Confirm Master Purge?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm font-medium">Are you absolutely sure? All tactical data associated with your identity will be permanently decommissioned from the Realtime Database.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="mt-8 flex gap-4">
+                    <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1">Abort</AlertDialogCancel>
+                    <AlertDialogAction onClick={handlePurgeAccount} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive text-white">Confirm ERASE</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardFooter>
           </Card>
         </div>
       </div>

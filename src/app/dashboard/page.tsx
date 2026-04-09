@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -442,6 +443,15 @@ export default function DashboardPage() {
     });
     
     if (target) {
+      const existingLink = links.find(l => l.uid === target.uid);
+      if (existingLink && (existingLink.status === 'linked' || existingLink.status === 'requested')) {
+        toast({ 
+          variant: "destructive", 
+          title: "Protocol Conflict", 
+          description: "Already linked on this node." 
+        });
+        return;
+      }
       handleSendLinkRequest(target);
     } else {
       toast({ variant: "destructive", title: "Target Missing", description: "No registered hardware signature found." });
