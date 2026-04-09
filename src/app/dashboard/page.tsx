@@ -464,7 +464,7 @@ export default function DashboardPage() {
   };
 
   const handleToggleNodeTrack = (nodeId: string, currentStatus: boolean) => {
-    if (!rtdb || !telemetryTargetUid) return;
+    if (!rtdb || !telemetryTargetUid || !user) return;
     const nodePath = `users/${telemetryTargetUid}/nodes/${nodeId}`;
     const newStatus = !currentStatus;
 
@@ -473,7 +473,10 @@ export default function DashboardPage() {
       delete trackingTimers.current[nodeId];
     }
 
-    update(ref(rtdb, nodePath), { trackRequest: newStatus });
+    update(ref(rtdb, nodePath), { 
+      trackRequest: newStatus,
+      trackRequester: newStatus ? user.uid : null 
+    });
     
     if (newStatus) {
       toast({ 
@@ -482,7 +485,10 @@ export default function DashboardPage() {
       });
 
       trackingTimers.current[nodeId] = setTimeout(() => {
-        update(ref(rtdb, nodePath), { trackRequest: false });
+        update(ref(rtdb, nodePath), { 
+          trackRequest: false,
+          trackRequester: null
+        });
         toast({
           title: "Signal Window Closed",
           description: `Tracking for node ${nodeId} has timed out.`
