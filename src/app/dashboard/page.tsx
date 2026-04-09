@@ -1260,6 +1260,22 @@ export default function DashboardPage() {
             e.preventDefault();
             if (!user || !rtdb) return;
             setRegisterLoading(true);
+
+            const hwIdClean = nodeForm.hardwareId.trim().toLowerCase();
+            const isHardwareIdTaken = allUsers.some(u => 
+              Object.values(u.nodes || {}).some((n: any) => n.hardwareId?.trim().toLowerCase() === hwIdClean)
+            ) || nodes.some(n => n.hardwareId?.trim().toLowerCase() === hwIdClean);
+
+            if (isHardwareIdTaken) {
+              toast({
+                variant: "destructive",
+                title: "Signature Conflict",
+                description: "Hardware ID is already synchronized with another tactical unit."
+              });
+              setRegisterLoading(false);
+              return;
+            }
+
             const nodeId = nodeForm.hardwareId || `NODE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
             set(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), { ...nodeForm, id: nodeId, status: 'online', registeredAt: Date.now() })
               .then(() => {
@@ -1317,6 +1333,22 @@ export default function DashboardPage() {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
             setRegisterLoading(true);
+
+            const hwIdClean = nodeForm.hardwareId.trim().toLowerCase();
+            const isHardwareIdTaken = allUsers.some(u => 
+              Object.values(u.nodes || {}).some((n: any) => n.hardwareId?.trim().toLowerCase() === hwIdClean)
+            ) || nodes.some(n => n.id !== itemToEdit.id && n.hardwareId?.trim().toLowerCase() === hwIdClean);
+
+            if (isHardwareIdTaken) {
+              toast({
+                variant: "destructive",
+                title: "Signature Conflict",
+                description: "Hardware ID is already synchronized with another tactical unit."
+              });
+              setRegisterLoading(false);
+              return;
+            }
+
             update(ref(rtdb, `users/${user.uid}/nodes/${itemToEdit.id}`), nodeForm)
               .then(() => {
                 logAction(`Recalibrated hardware node: ${nodeForm.nodeName}`);
