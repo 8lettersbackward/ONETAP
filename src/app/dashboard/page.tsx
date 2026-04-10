@@ -85,8 +85,6 @@ export default function DashboardPage() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  const trackingTimers = useRef<Record<string, any>>({});
-
   const [buddyForm, setBuddyForm] = useState({
     name: '',
     phoneNumber: '',
@@ -250,7 +248,6 @@ export default function DashboardPage() {
       if (!alert || alertId === lastProcessedAlertRef.current) return;
       lastProcessedAlertRef.current = alertId;
 
-      // Real place geocoding for ANY notification with coordinates
       if (isValidCoordinate(alert.latitude) && isValidCoordinate(alert.longitude) && !alert.place) {
         try {
           const geo = await reverseGeocode({ latitude: Number(alert.latitude), longitude: Number(alert.longitude) });
@@ -261,7 +258,6 @@ export default function DashboardPage() {
         }
       }
 
-      // Special handling for SOS for User role
       if (alert.type === "sos" && userRole === 'user') {
         const createdAt = alert.createdAt || alert.timestamp || 0;
         if (Date.now() - createdAt < 30000) {
@@ -470,11 +466,6 @@ export default function DashboardPage() {
     const nodePath = `users/${telemetryTargetUid}/nodes/${nodeId}`;
     const newStatus = !currentStatus;
 
-    if (trackingTimers.current[nodeId]) {
-      clearTimeout(trackingTimers.current[nodeId]);
-      delete trackingTimers.current[nodeId];
-    }
-
     update(ref(rtdb, nodePath), { 
       trackRequest: newStatus,
       trackRequester: newStatus ? user.uid : null 
@@ -483,20 +474,8 @@ export default function DashboardPage() {
     if (newStatus) {
       toast({ 
         title: "Track Signal Dispatched",
-        description: "Requesting hardware telemetry broadcast (10s window)."
+        description: "Requesting hardware telemetry broadcast."
       });
-
-      trackingTimers.current[nodeId] = setTimeout(() => {
-        update(ref(rtdb, nodePath), { 
-          trackRequest: false,
-          trackRequester: null
-        });
-        toast({
-          title: "Signal Window Closed",
-          description: `Tracking for node ${nodeId} has timed out.`
-        });
-        delete trackingTimers.current[nodeId];
-      }, 10000);
     } else {
       toast({ 
         title: "Track Signal Suspended",
