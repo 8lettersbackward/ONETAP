@@ -257,7 +257,7 @@ export default function DashboardPage() {
         }
       }
 
-      if (alert.type === "sos" && userRole === 'user') {
+      if (alert.type === "sos") {
         const createdAt = alert.createdAt || alert.timestamp || 0;
         if (Date.now() - createdAt < 30000) {
           setActiveSosAlert({ ...alert, id: alertId, createdAt });
@@ -912,7 +912,7 @@ export default function DashboardPage() {
                           </Badge>
                         </div>
                         
-                        {n.type === 'sos' && userRole === 'user' && (
+                        {n.type === 'sos' && (
                           <div className="space-y-4 mb-4 ml-0 sm:ml-9">
                             <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>
                             <div className="space-y-2">
