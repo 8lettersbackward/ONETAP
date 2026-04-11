@@ -98,15 +98,17 @@ export default function DashboardPage() {
 
   const notifications = useMemo(() => notificationsData ? Object.entries(notificationsData).map(([id, val]: [string, any]) => ({ ...val, id, createdAt: val.createdAt || val.timestamp || 0 })).sort((a, b) => b.createdAt - a.createdAt) : [], [notificationsData]);
 
+  const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
+
+  const navItems = useMemo(() => {
+    return userRole === 'guardian' 
+      ? [{ id: 'guardian', label: 'TACTICAL RADAR', icon: Radar }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
+      : [{ id: 'buddies', label: 'MANAGE BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'MANAGE NODES', icon: Cpu }, { id: 'my-guardians', label: 'MY GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
+  }, [userRole]);
+
   const logOutTerminal = () => signOut(auth).then(() => router.push("/login"));
 
   if (userLoading || !hasMounted) return <div className="flex items-center justify-center min-h-screen bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
-
-  const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
-
-  const navItems = userRole === 'guardian' 
-    ? [{ id: 'guardian', label: 'TACTICAL RADAR', icon: Radar }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
-    : [{ id: 'buddies', label: 'MANAGE BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'MANAGE NODES', icon: Cpu }, { id: 'my-guardians', label: 'MY GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
