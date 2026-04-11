@@ -2,7 +2,7 @@
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,9 +163,9 @@ export default function DashboardPage() {
 
   const logOutTerminal = useCallback(() => signOut(auth).then(() => router.push("/login")), [auth, router]);
 
-  const toggleGroupSelection = (groupId: string) => {
+  const toggleGroupSelection = (groupId: string, checked: boolean) => {
     setSelectedGroups(prev => 
-      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+      checked ? [...prev, groupId] : prev.filter(id => id !== groupId)
     );
   };
 
@@ -180,11 +180,11 @@ export default function DashboardPage() {
     };
 
     if (editingBuddy) {
-      // Sequence Modal Transition to prevent freeze
+      // Release modal state explicitly to prevent freeze
       setIsBuddyDialogOpen(false);
       setTimeout(() => {
         setPendingUpdate({ type: 'buddy', data: buddyData });
-      }, 200);
+      }, 300);
     } else {
       try {
         await push(ref(rtdb, `users/${user.uid}/buddies`), buddyData);
@@ -209,11 +209,11 @@ export default function DashboardPage() {
     };
 
     if (editingNode) {
-      // Sequence Modal Transition to prevent freeze
+      // Release modal state explicitly to prevent freeze
       setIsNodeDialogOpen(false);
       setTimeout(() => {
         setPendingUpdate({ type: 'node', data: nodeData });
-      }, 200);
+      }, 300);
     } else {
       try {
         await push(ref(rtdb, `users/${user.uid}/nodes`), nodeData);
@@ -231,6 +231,7 @@ export default function DashboardPage() {
     const currentEditingBuddy = editingBuddy;
     const currentEditingNode = editingNode;
 
+    // Reset update state immediately to clear confirmation dialog
     setPendingUpdate(null);
 
     try {
@@ -302,7 +303,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* 2. Navigation Structure (Handheld Bottom / Desktop Sidebar) */}
+      {/* Navigation Structure */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-background/80 backdrop-blur-md border-t border-black/5 pb-8 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => (
           <button
@@ -585,7 +586,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* 3. Operational Modals (Verification Gates) */}
+      {/* Operational Confirmation Modals */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
         <AlertDialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <AlertDialogHeader>
@@ -635,6 +636,7 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Primary Configuration Dialogs */}
       <Dialog open={isBuddyDialogOpen} onOpenChange={(open) => { setIsBuddyDialogOpen(open); if (!open) setEditingBuddy(null); }}>
         <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
           <DialogHeader>
@@ -664,7 +666,7 @@ export default function DashboardPage() {
                       <Checkbox 
                         id={`buddy-group-${group.id}`} 
                         checked={selectedGroups.includes(group.id)} 
-                        onCheckedChange={() => toggleGroupSelection(group.id)}
+                        onCheckedChange={(checked) => toggleGroupSelection(group.id, !!checked)}
                         className="border-primary/40 h-5 w-5 rounded-md"
                       />
                       <Label htmlFor={`buddy-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none leading-none pt-0.5">{group.name}</Label>
@@ -712,7 +714,7 @@ export default function DashboardPage() {
                       <Checkbox 
                         id={`node-group-${group.id}`} 
                         checked={selectedGroups.includes(group.id)} 
-                        onCheckedChange={() => toggleGroupSelection(group.id)}
+                        onCheckedChange={(checked) => toggleGroupSelection(group.id, !!checked)}
                         className="border-primary/40 h-5 w-5 rounded-md"
                       />
                       <Label htmlFor={`node-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none leading-none pt-0.5">{group.name}</Label>
