@@ -108,7 +108,7 @@ export default function DashboardPage() {
   // SOS Intercept States
   const [interceptAlert, setInterceptAlert] = useState<any>(null);
 
-  // Hooks
+  // Hooks - MUST BE AT THE TOP FOR REACT INTEGRITY
   const buddiesRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddies`) : null, [rtdb, user]);
   const nodesRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/nodes`) : null, [rtdb, user]);
   const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
@@ -284,7 +284,15 @@ export default function DashboardPage() {
     }
   };
 
-  if (userLoading || !hasMounted) return <div className="flex items-center justify-center min-h-screen bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+  if (userLoading || !hasMounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
@@ -656,7 +664,7 @@ export default function DashboardPage() {
                         onCheckedChange={() => toggleGroupSelection(group.id)}
                         className="border-primary/30"
                       />
-                      <label htmlFor={`group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none">{group.name}</label>
+                      <Label htmlFor={`group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none">{group.name}</Label>
                     </div>
                   ))
                 )}
@@ -705,7 +713,7 @@ export default function DashboardPage() {
                         onCheckedChange={() => toggleGroupSelection(group.id)}
                         className="border-primary/30"
                       />
-                      <label htmlFor={`node-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none">{group.name}</label>
+                      <Label htmlFor={`node-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none">{group.name}</Label>
                     </div>
                   ))
                 )}
