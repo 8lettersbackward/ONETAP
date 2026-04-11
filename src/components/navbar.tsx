@@ -7,25 +7,17 @@ import { signOut } from "firebase/auth";
 import { Menu, X, User as UserIcon, Hexagon, Radar, ShieldAlert } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ref, get } from "firebase/database";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { user } = useUser();
   const auth = useAuth();
   const rtdb = useDatabase();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user && rtdb) {
-      const profileRef = ref(rtdb, `users/${user.uid}/profile`);
-      get(profileRef).then(snapshot => {
-        const profile = snapshot.val();
-        setUserRole(profile?.role || 'user');
-      });
-    } else {
-      setUserRole(null);
-    }
-  }, [user, rtdb]);
+  // Hide Navbar on dashboard to match the sidebar-only layout from the reference
+  if (pathname === '/dashboard') return null;
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -50,19 +42,11 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-8">
             {user ? (
               <div className="flex items-center space-x-6">
-                {userRole === 'guardian' && (
-                  <Link href="/dashboard?view=guardian">
-                    <Button variant="ghost" className="neo-btn h-10 px-4 text-[10px] font-bold uppercase tracking-widest text-foreground hover:text-primary">
-                      <Radar className="h-4 w-4 mr-2" /> Track
-                    </Button>
-                  </Link>
-                )}
-                <div className="flex flex-col items-end">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-foreground leading-none">{currentName}</span>
-                   <Link href="/dashboard" className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary mt-1">
-                    HUB
-                  </Link>
-                </div>
+                <Link href="/dashboard">
+                   <div className="h-10 w-10 neo-btn flex items-center justify-center text-foreground hover:text-primary">
+                     <Radar className="h-5 w-5" />
+                   </div>
+                </Link>
                 <Link href="/profile">
                    <div className="h-10 w-10 neo-btn flex items-center justify-center text-foreground hover:text-primary">
                      <UserIcon className="h-5 w-5" />
@@ -103,9 +87,6 @@ export function Navbar() {
               <div className="space-y-8">
                 <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-foreground">HUB TERMINAL</Link>
                 <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-foreground">PROFILE</Link>
-                {userRole === 'guardian' && (
-                  <Link href="/dashboard?view=guardian" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-primary">TACTICAL TRACK</Link>
-                )}
               </div>
               <div className="pt-8 border-t border-white/10">
                 <button onClick={() => { handleSignOut(); setMobileMenuOpen(false); }} className="w-full text-left text-sm font-bold uppercase tracking-[0.3em] text-destructive">

@@ -40,6 +40,7 @@ import {
   ShieldCheck,
   UserCheck,
   Navigation,
+  Hexagon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -69,41 +70,7 @@ export default function DashboardPage() {
   
   const [activeTab, setActiveTab] = useState<TabType>('buddies');
   const [hasMounted, setHasMounted] = useState(false);
-  const [registerLoading, setRegisterLoading] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-
-  const [buddyForm, setBuddyForm] = useState({ name: '', phoneNumber: '', groups: [] as string[] });
-  const [nodeForm, setNodeForm] = useState({ nodeName: '', hardwareId: '', phoneNumber: '', temperature: 24, targetGroups: [] as string[] });
-
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
-  const [activeTrackedNodes, setActiveTrackedNodes] = useState<any[]>([]);
-  const [telemetryTargetUid, setTelemetryTargetUid] = useState<string | null>(null);
-
-  const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
-  const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
-  const [isEditBuddyDialogOpen, setIsEditBuddyDialogOpen] = useState(false);
-  const [isEditNodeDialogOpen, setIsEditNodeDialogOpen] = useState(false);
-  const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
-  const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<any>(null);
-  const [itemToView, setItemToView] = useState<any>(null);
-  const [itemToEdit, setItemToEdit] = useState<any>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-
-  const [activeSosAlert, setActiveSosAlert] = useState<any>(null);
-  const [isSosMapOpen, setIsSosMapOpen] = useState(false);
-  const lastProcessedAlertRef = useRef<string | null>(null);
-
-  const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
-
-  const isValidCoordinate = (val: any) => {
-    if (val === undefined || val === null || val === "No_fix") return false;
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return !isNaN(num) && isFinite(num) && num !== 0;
-  };
 
   useEffect(() => {
     setHasMounted(true);
@@ -126,179 +93,129 @@ export default function DashboardPage() {
     }
   }, [user, userLoading, router, rtdb]);
 
-  useEffect(() => {
-    if (rtdb && user && user.emailVerified) {
-      const usersRef = ref(rtdb, 'users');
-      const unsubscribe = onValue(usersRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const list = Object.entries(data)
-            .filter(([uid]) => uid !== user.uid)
-            .map(([uid, val]: [string, any]) => ({
-              uid,
-              email: val.profile?.email || 'N/A',
-              displayName: val.profile?.displayName || (val.profile?.email?.split('@')[0] || 'Unit'),
-              role: val.profile?.role || 'user',
-              nodes: val.nodes || {}
-            }));
-          setAllUsers(list);
-        }
-      });
-      return () => off(usersRef, 'value', unsubscribe);
-    }
-  }, [user, rtdb]);
-
-  const buddiesRef = useMemo(() => user && user.emailVerified ? ref(rtdb, `users/${user.uid}/buddies`) : null, [rtdb, user]);
-  const { data: buddiesData } = useRtdb(buddiesRef);
-
-  const nodesRef = useMemo(() => user && user.emailVerified ? ref(rtdb, `users/${user.uid}/nodes`) : null, [rtdb, user]);
-  const { data: nodesData } = useRtdb(nodesRef);
-
   const notificationsRef = useMemo(() => user && user.emailVerified ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
 
-  const linksRef = useMemo(() => user && user.emailVerified ? ref(rtdb, `users/${user.uid}/links`) : null, [rtdb, user]);
-  const { data: linksData } = useRtdb(linksRef);
-
-  useEffect(() => {
-    if (!user || !user.emailVerified || !rtdb) return;
-    const queryRef = ref(rtdb, `users/${user.uid}/notifications`);
-    const unsubscribe = onChildAdded(queryRef, async (snapshot) => {
-      const alert = snapshot.val();
-      const alertId = snapshot.key;
-      if (!alert || alertId === lastProcessedAlertRef.current) return;
-      lastProcessedAlertRef.current = alertId;
-      if (isValidCoordinate(alert.latitude) && isValidCoordinate(alert.longitude) && !alert.place) {
-        try {
-          const geo = await reverseGeocode({ latitude: Number(alert.latitude), longitude: Number(alert.longitude) });
-          const place = `${geo.city}, ${geo.province}, ${geo.country}`;
-          update(ref(rtdb, `users/${user.uid}/notifications/${alertId}`), { place });
-        } catch (e) {}
-      }
-      if (alert.type === "sos" && Date.now() - (alert.createdAt || 0) < 30000 && alert.trigger !== "TrackResponse") {
-        setActiveSosAlert({ ...alert, id: alertId });
-        setIsSosMapOpen(true);
-      }
-    });
-    return () => off(queryRef, "child_added", unsubscribe);
-  }, [user, rtdb]);
-
-  const buddies = useMemo(() => buddiesData ? Object.entries(buddiesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [buddiesData]);
-  const nodes = useMemo(() => nodesData ? Object.entries(nodesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [nodesData]);
   const notifications = useMemo(() => notificationsData ? Object.entries(notificationsData).map(([id, val]: [string, any]) => ({ ...val, id, createdAt: val.createdAt || val.timestamp || 0 })).sort((a, b) => b.createdAt - a.createdAt) : [], [notificationsData]);
-  const links = useMemo(() => linksData ? Object.entries(linksData).map(([id, val]: [string, any]) => ({ ...val, uid: id })) : [], [linksData]);
-
-  const handleToggleNodeTrack = (nodeId: string, currentStatus: boolean) => {
-    if (!rtdb || !telemetryTargetUid || !user) return;
-    const newStatus = !currentStatus;
-    update(ref(rtdb, `users/${telemetryTargetUid}/nodes/${nodeId}`), { 
-      trackRequest: newStatus,
-      trackRequester: newStatus ? user.uid : null 
-    });
-    toast({ title: newStatus ? "Track Signal Initiated" : "Track Signal Suspended" });
-  };
 
   const logOutTerminal = () => signOut(auth).then(() => router.push("/login"));
 
   if (userLoading || !hasMounted) return <div className="flex items-center justify-center min-h-screen bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
 
+  const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
+
   const navItems = userRole === 'guardian' 
-    ? [{ id: 'guardian', label: 'TACTICAL RADAR', icon: Radar }, { id: 'notifications', label: 'TELEMETRY', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
-    : [{ id: 'buddies', label: 'BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'NODES', icon: Cpu }, { id: 'my-guardians', label: 'GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'TELEMETRY', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
+    ? [{ id: 'guardian', label: 'TACTICAL RADAR', icon: Radar }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
+    : [{ id: 'buddies', label: 'MANAGE BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'MANAGE NODES', icon: Cpu }, { id: 'my-guardians', label: 'MY GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
-      <aside className="w-full md:w-72 p-6 md:h-screen md:sticky top-0 z-40">
+      {/* Sidebar based on reference image */}
+      <aside className="w-full md:w-80 p-8 md:h-screen md:sticky top-0 z-40 border-r border-white/20 bg-background/50 flex flex-col justify-between">
         <div className="space-y-12">
-          <div className="flex items-center gap-4 p-6 neo-flat">
-            <Avatar className="h-12 w-12 neo-inset">
-              <AvatarFallback className="bg-transparent text-primary font-bold">{currentName[0].toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold truncate uppercase tracking-widest">{currentName}</p>
-              <p className="text-[8px] opacity-40 uppercase font-bold tracking-[0.2em]">{userRole}</p>
+          <div className="flex items-center gap-3 px-2">
+            <div className="h-10 w-10 neo-flat flex items-center justify-center text-primary">
+              <Hexagon className="h-6 w-6" />
             </div>
+            <h1 className="text-xl font-black tracking-tighter uppercase flex items-baseline gap-1">
+              1TAP <span className="text-primary">BUDDY</span>
+            </h1>
           </div>
+
           <nav className="flex flex-col gap-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as TabType)}
                 className={cn(
-                  "flex items-center gap-4 px-6 py-4 transition-all text-[10px] font-bold uppercase tracking-[0.2em] relative",
-                  activeTab === item.id ? "neo-inset text-primary" : "neo-btn text-muted-foreground hover:text-foreground"
+                  "flex items-center gap-4 px-6 py-4 transition-all text-[11px] font-bold uppercase tracking-[0.1em] relative group",
+                  activeTab === item.id 
+                    ? "neo-inset text-primary" 
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className={cn("h-4 w-4", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate">{item.label}</span>
                 {notifications.length > 0 && item.id === 'notifications' && (
-                  <span className="absolute top-4 right-4 h-2 w-2 bg-primary rounded-full animate-pulse" />
+                  <span className="absolute top-1/2 -translate-y-1/2 right-6 h-2 w-2 bg-primary rounded-full" />
                 )}
               </button>
             ))}
           </nav>
         </div>
+
+        {/* Profile Card at bottom of sidebar */}
+        <div className="mt-auto space-y-4">
+          <div className="p-6 neo-flat space-y-4">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-10 w-10 neo-inset">
+                <AvatarFallback className="bg-transparent text-[10px] font-bold text-muted-foreground">{currentName[0].toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="overflow-hidden">
+                <p className="text-[10px] font-black truncate uppercase tracking-widest">{currentName} TERMINAL</p>
+                <p className="text-[9px] font-bold text-primary uppercase tracking-widest">{userRole}</p>
+              </div>
+            </div>
+            <button 
+              onClick={logOutTerminal}
+              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors pl-1"
+            >
+              <LogOut className="h-3 w-3" />
+              DISCONNECT
+            </button>
+          </div>
+        </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-16 w-full">
-        <div className="max-w-6xl mx-auto space-y-12">
-          {activeTab === 'guardian' && (
+      <main className="flex-1 p-8 md:p-16 w-full">
+        <div className="max-w-6xl mx-auto">
+          {activeTab === 'buddies' && (
             <div className="space-y-12">
-              <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-bold tracking-tighter uppercase">Tactical Radar</h1>
-                <p className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-40">Personnel recruitment Hub</p>
-              </div>
-              <div className="neo-flat p-10 space-y-8">
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40 ml-2">Hardware Signature</Label>
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    <Input 
-                      placeholder="NODE-XXXX" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-16 neo-inset bg-background text-foreground px-8 flex-1"
-                    />
-                    <Button onClick={() => {}} className="h-16 px-12 neo-btn bg-background text-foreground uppercase text-[10px] font-bold tracking-widest w-full sm:w-auto">Intercept</Button>
-                  </div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <h2 className="text-2xl font-black tracking-tight uppercase text-foreground/80">Manage Buddies</h2>
+                <div className="flex gap-4">
+                  <Button className="neo-btn h-11 px-6 text-[10px] font-bold uppercase tracking-widest bg-background text-muted-foreground hover:text-primary">
+                    <PlusSquare className="h-4 w-4 mr-2" /> ENLIST
+                  </Button>
+                  <Button className="neo-btn h-11 px-6 text-[10px] font-bold uppercase tracking-widest bg-background text-primary">
+                    <ShieldAlert className="h-4 w-4 mr-2" /> PROTOCOLS
+                  </Button>
                 </div>
+              </div>
+
+              {/* Neomorphic Content Card */}
+              <div className="neo-flat p-10 min-h-[400px] flex items-center justify-center text-center">
+                 <div className="space-y-6 opacity-30">
+                   <Smartphone className="h-16 w-16 mx-auto" />
+                   <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Operational Vault Empty</p>
+                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'notifications' && (
             <div className="space-y-12">
-              <h1 className="text-4xl font-bold tracking-tighter uppercase">Telemetry Vault</h1>
+              <h2 className="text-2xl font-black tracking-tight uppercase text-foreground/80">Notification Stream</h2>
               <div className="neo-flat p-10">
                 <ScrollArea className="h-[600px] pr-6">
                   {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[400px] opacity-10">
                       <Bell className="h-16 w-16 mb-6" />
-                      <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Vault Clear</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Telemetry Clear</p>
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className="mb-10 p-8 neo-flat bg-background/50">
-                        <div className="flex justify-between items-start mb-6">
+                      <div key={n.id} className="mb-8 p-8 neo-flat bg-background/20">
+                        <div className="flex justify-between items-start">
                           <div className="flex gap-4 items-center">
-                            {n.type === 'sos' ? <AlertTriangle className="h-5 w-5 text-primary animate-pulse" /> : <Radar className="h-5 w-5 opacity-40" />}
-                            <p className="text-sm font-bold uppercase tracking-widest">{n.message}</p>
-                          </div>
-                          <Badge className="neo-inset bg-transparent text-[8px] text-foreground border-none px-4 py-1 uppercase">{new Date(n.createdAt).toLocaleTimeString()}</Badge>
-                        </div>
-                        {isValidCoordinate(n.latitude) && (
-                          <div className="space-y-6">
-                            <div className="neo-inset p-4 space-y-1">
-                              <p className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><MapPin className="h-3 w-3" /> {n.place || 'Coordinates'}</p>
-                              <p className="text-[10px] font-mono opacity-40">LAT: {n.latitude} | LNG: {n.longitude}</p>
+                            {n.type === 'sos' ? <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" /> : <Radar className="h-5 w-5 text-primary" />}
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-widest">{n.message}</p>
+                              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleString()}</p>
                             </div>
-                            <Button 
-                              onClick={() => { setActiveSosAlert(n); setIsSosMapOpen(true); }}
-                              className="w-full h-12 neo-btn bg-background text-foreground uppercase text-[10px] font-bold tracking-widest"
-                            >
-                              View Tactical Map
-                            </Button>
                           </div>
-                        )}
+                          <Badge className="neo-btn bg-background text-[8px] font-bold px-4 py-1 uppercase">{n.type}</Badge>
+                        </div>
                       </div>
                     ))
                   )}
@@ -307,59 +224,17 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'settings' && (
-            <div className="max-w-md space-y-12">
-              <h1 className="text-4xl font-bold tracking-tighter uppercase">Profile Hub</h1>
-              <div className="neo-flat p-12 space-y-10">
-                <div className="p-8 neo-inset">
-                  <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-4">Identity Details</p>
-                  <p className="text-xs font-bold uppercase">{user.email}</p>
-                  <p className="text-[10px] font-bold opacity-20 uppercase tracking-[0.2em] mt-2">ID: {user.uid}</p>
-                </div>
-                <Button variant="destructive" onClick={logOutTerminal} className="w-full h-16 neo-btn bg-background text-destructive hover:text-destructive text-sm font-bold uppercase tracking-[0.2em]">
-                  <LogOut className="h-5 w-5 mr-3" /> Sign Out
-                </Button>
-              </div>
+          {/* Placeholder for other tabs */}
+          {activeTab !== 'buddies' && activeTab !== 'notifications' && (
+            <div className="space-y-12">
+               <h2 className="text-2xl font-black tracking-tight uppercase text-foreground/80">{activeTab.replace('-', ' ')}</h2>
+               <div className="neo-flat p-20 flex items-center justify-center opacity-20">
+                 <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Terminal Section Initializing...</p>
+               </div>
             </div>
           )}
         </div>
       </main>
-
-      <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
-        <DialogContent className="neo-flat max-w-4xl p-0 overflow-hidden [&>button]:hidden">
-          <DialogHeader className="p-10 neo-inset m-6 mb-0">
-             <div className="flex justify-between items-center">
-               <div className="flex items-center gap-4">
-                  <Radar className="h-8 w-8 text-primary animate-pulse" />
-                  <DialogTitle className="text-xl font-bold uppercase tracking-[0.2em] text-foreground">Tactical Intercept</DialogTitle>
-               </div>
-               <Badge className="neo-flat bg-background text-foreground uppercase text-[10px] px-6 py-2 border-none font-bold">LIVE SIGNAL</Badge>
-             </div>
-          </DialogHeader>
-          <div className="p-10 space-y-10">
-            <div className="neo-inset p-2">
-              <SOSMap 
-                latitude={activeSosAlert?.latitude || 0} 
-                longitude={activeSosAlert?.longitude || 0}
-                label={activeSosAlert?.place || 'Target Location'}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="p-6 neo-inset">
-                <Label className="text-[10px] font-bold uppercase opacity-40 block mb-2">Spatial Context</Label>
-                <p className="text-xs font-bold uppercase break-words">{activeSosAlert?.place || 'Analyzing Signal...'}</p>
-              </div>
-              <div className="p-6 neo-inset">
-                <Label className="text-[10px] font-bold uppercase opacity-40 block mb-2">Coordinates</Label>
-                <p className="text-[10px] font-mono font-bold">{activeSosAlert?.latitude}, {activeSosAlert?.longitude}</p>
-              </div>
-            </div>
-            <Button onClick={() => setIsSosMapOpen(false)} className="w-full h-16 neo-btn bg-background text-foreground text-sm font-bold uppercase tracking-[0.3em]">
-              CLOSE TERMINAL
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

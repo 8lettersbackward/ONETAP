@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 83%; /* #D3D3D3 */
-    --foreground: 0 0% 29%; /* #4A4A4A */
-    --card: 0 0% 83%;
-    --card-foreground: 0 0% 29%;
-    --popover: 0 0% 83%;
-    --popover-foreground: 0 0% 29%;
-    --primary: 0 0% 29%;
+    --background: 220 20% 94%; /* #ECF0F3 */
+    --foreground: 220 30% 30%; /* #34495e */
+    --card: 220 20% 94%;
+    --card-foreground: 220 30% 30%;
+    --popover: 220 20% 94%;
+    --popover-foreground: 220 30% 30%;
+    --primary: 217 91% 60%; /* Bright Blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 40%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 75%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 29%;
+    --secondary: 220 15% 85%;
+    --secondary-foreground: 220 30% 30%;
+    --muted: 220 15% 90%;
+    --muted-foreground: 220 20% 50%;
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 0 0% 75%;
-    --input: 0 0% 75%;
-    --ring: 0 0% 29%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 217 91% 60%;
     --radius: 2rem;
   }
 }
@@ -39,33 +39,33 @@
 
 @layer components {
   .neo-flat {
-    background: #D3D3D3;
-    box-shadow: 8px 8px 16px #b3b3b3, -8px -8px 16px #f3f3f3;
+    background: #ECF0F3;
+    box-shadow: 10px 10px 20px #d1d9e6, -10px -10px 20px #ffffff;
     @apply rounded-[2rem] border-none;
   }
 
   .neo-inset {
-    background: #D3D3D3;
-    box-shadow: inset 8px 8px 16px #b3b3b3, inset -8px -8px 16px #f3f3f3;
+    background: #ECF0F3;
+    box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
     @apply rounded-[2rem] border-none;
   }
 
   .neo-pressed {
-    background: #D3D3D3;
-    box-shadow: inset 4px 4px 8px #b3b3b3, inset -4px -4px 8px #f3f3f3;
+    background: #ECF0F3;
+    box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
     @apply rounded-[2rem] border-none;
   }
 
   .neo-btn {
-    background: #D3D3D3;
-    box-shadow: 6px 6px 12px #b3b3b3, -6px -6px 12px #f3f3f3;
-    @apply rounded-[1.5rem] border-none transition-all active:shadow-inner;
+    background: #ECF0F3;
+    box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+    @apply rounded-[2rem] border-none transition-all active:shadow-inner;
   }
 
   .neo-btn-active {
-    background: #D3D3D3;
-    box-shadow: inset 4px 4px 8px #b3b3b3, inset -4px -4px 8px #f3f3f3;
-    @apply rounded-[1.5rem] border-none;
+    background: #ECF0F3;
+    box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+    @apply rounded-[2rem] border-none;
   }
 }
 
