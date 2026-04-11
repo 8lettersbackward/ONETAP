@@ -31,7 +31,6 @@
         "id": { "type": "string" },
         "nodeName": { "type": "string" },
         "hardwareId": { "type": "string" },
-        "phoneNumber": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline", "error"] },
         "temperature": { "type": "number" },
         "targetGroups": { "type": "array", "items": { "type": "string" } },
@@ -50,8 +49,7 @@
         "timestamp": { "type": "number" },
         "triggeredByNode": { "type": "string" },
         "latitude": { "type": "number" },
-        "longitude": { "type": "number" },
-        "place": { "type": "string" }
+        "longitude": { "type": "number" }
       }
     }
   },

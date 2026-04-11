@@ -37,6 +37,7 @@ import {
   Phone,
   Activity,
   Circle,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, get } from "firebase/database";
@@ -91,6 +92,30 @@ export default function DashboardPage() {
   // SOS Intercept States
   const [interceptAlert, setInterceptAlert] = useState<any>(null);
 
+  // Memoized Refs and Data
+  const buddiesRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddies`) : null, [rtdb, user]);
+  const nodesRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/nodes`) : null, [rtdb, user]);
+  const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
+  const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
+
+  const { data: buddiesData } = useRtdb(buddiesRef);
+  const { data: nodesData } = useRtdb(nodesRef);
+  const { data: groupsData } = useRtdb(groupsRef);
+  const { data: notificationsData } = useRtdb(notificationsRef);
+
+  const buddies = useMemo(() => buddiesData ? Object.entries(buddiesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [buddiesData]);
+  const nodes = useMemo(() => nodesData ? Object.entries(nodesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [nodesData]);
+  const groups = useMemo(() => groupsData ? Object.entries(groupsData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [groupsData]);
+  const notifications = useMemo(() => notificationsData ? Object.entries(notificationsData).map(([id, val]: [string, any]) => ({ ...val, id, createdAt: val.createdAt || val.timestamp || 0 })).sort((a, b) => b.createdAt - a.createdAt) : [], [notificationsData]);
+
+  const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
+
+  const navItems = useMemo(() => {
+    return userRole === 'guardian' 
+      ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
+      : [{ id: 'buddies', label: 'BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'NODES', icon: Cpu }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
+  }, [userRole]);
+
   useEffect(() => {
     setHasMounted(true);
     if (!userLoading) {
@@ -126,29 +151,6 @@ export default function DashboardPage() {
       return () => off(notifRef, 'child_added', listener);
     }
   }, [user, userLoading, router, rtdb]);
-
-  const buddiesRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddies`) : null, [rtdb, user]);
-  const nodesRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/nodes`) : null, [rtdb, user]);
-  const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
-  const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
-
-  const { data: buddiesData } = useRtdb(buddiesRef);
-  const { data: nodesData } = useRtdb(nodesRef);
-  const { data: groupsData } = useRtdb(groupsRef);
-  const { data: notificationsData } = useRtdb(notificationsRef);
-
-  const buddies = useMemo(() => buddiesData ? Object.entries(buddiesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [buddiesData]);
-  const nodes = useMemo(() => nodesData ? Object.entries(nodesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [nodesData]);
-  const groups = useMemo(() => groupsData ? Object.entries(groupsData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [groupsData]);
-  const notifications = useMemo(() => notificationsData ? Object.entries(notificationsData).map(([id, val]: [string, any]) => ({ ...val, id, createdAt: val.createdAt || val.timestamp || 0 })).sort((a, b) => b.createdAt - a.createdAt) : [], [notificationsData]);
-
-  const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
-
-  const navItems = useMemo(() => {
-    return userRole === 'guardian' 
-      ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
-      : [{ id: 'buddies', label: 'BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'NODES', icon: Cpu }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
-  }, [userRole]);
 
   const logOutTerminal = () => signOut(auth).then(() => router.push("/login"));
 
@@ -266,7 +268,7 @@ export default function DashboardPage() {
             <item.icon className={cn("h-5 w-5", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
             <span className="text-foreground">{item.label}</span>
             {notifications.length > 0 && item.id === 'notifications' && (
-              <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-primary rounded-full shadow-[0_0_5px_var(--primary)]" />
+              <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-primary rounded-full" />
             )}
           </button>
         ))}
@@ -455,7 +457,7 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className={cn("mb-6 p-6 neo-flat relative group overflow-hidden transition-all duration-300", n.type === 'sos' ? "bg-destructive/5 shadow-[10px_10px_20px_#f2dede,-10px_-10px_20px_#ffffff]" : "bg-primary/5")}>
+                      <div key={n.id} className={cn("mb-6 p-6 neo-flat relative group overflow-hidden transition-all duration-300", n.type === 'sos' ? "bg-destructive/5" : "bg-primary/5")}>
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 relative z-10">
                           <div className="flex gap-4 items-center">
                             {n.type === 'sos' ? (
@@ -471,9 +473,6 @@ export default function DashboardPage() {
                               <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed text-foreground">{n.message || 'Incoming Telemetry Fix'}</p>
                               <div className="flex items-center gap-3 mt-1.5">
                                 <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(n.createdAt).toLocaleString()}</p>
-                                {n.place && (
-                                  <Badge variant="outline" className="text-[7px] border-none bg-primary/10 text-primary py-0 px-2 font-bold uppercase">{n.place}</Badge>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -493,12 +492,22 @@ export default function DashboardPage() {
 
           {activeTab === 'guardian' && (
             <div className="space-y-8">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Hub</h2>
-              <div className="neo-flat p-8 min-h-[400px] flex items-center justify-center text-center">
-                 <div className="space-y-6 opacity-30">
-                   <Radar className="h-12 w-12 mx-auto text-primary" />
-                   <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">Terminal Section Initializing...</p>
-                 </div>
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Radar</h2>
+              <div className="neo-flat p-8 space-y-8">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Scan for Hardware Asset</Label>
+                  <div className="flex gap-3">
+                    <Input placeholder="ENTER HARDWARE ID SIGNATURE" className="h-12 neo-inset bg-background text-foreground border-none px-5 text-[10px] font-bold uppercase tracking-widest flex-1" />
+                    <Button className="h-12 w-12 neo-btn bg-background text-primary">
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="p-12 text-center opacity-30 flex flex-col items-center">
+                  <Radar className="h-12 w-12 mb-6 text-foreground" />
+                  <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">No Linked Assets Tracked</p>
+                </div>
               </div>
             </div>
           )}
@@ -515,7 +524,7 @@ export default function DashboardPage() {
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{user.email}</p>
                   </div>
                   <Button onClick={() => router.push('/profile')} className="neo-btn h-12 px-8 text-[10px] font-bold uppercase tracking-[0.3em] bg-background text-foreground hover:text-primary transition-all">
-                    <Settings className="h-4 w-4 mr-3 text-primary/60" /> CONFIGURE TERMINAL
+                    <Settings className="h-4 w-4 mr-3 text-primary/60" /> CONFIGURE HUB
                   </Button>
                </div>
             </div>
@@ -537,7 +546,7 @@ export default function DashboardPage() {
                   <p className="text-[9px] font-bold text-destructive uppercase tracking-widest mt-1">High Intensity Alert Active</p>
                 </div>
               </div>
-              <Badge className="bg-destructive text-white border-none text-[8px] font-bold px-4 py-1 animate-pulse uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)]">Critical</Badge>
+              <Badge className="bg-destructive text-foreground border-none text-[8px] font-bold px-4 py-1 animate-pulse uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)]">Critical</Badge>
             </div>
           </DialogHeader>
 
@@ -549,11 +558,7 @@ export default function DashboardPage() {
                  </div>
                  <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed text-foreground">{interceptAlert?.message}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="neo-flat bg-background/50 p-4 space-y-1 border border-black/5">
-                    <p className="text-[8px] font-bold text-muted-foreground uppercase">Sector Fix</p>
-                    <p className="text-[10px] font-black uppercase text-foreground">{interceptAlert?.place || 'Unknown Sector'}</p>
-                 </div>
+              <div className="grid grid-cols-1 gap-4">
                  <div className="neo-flat bg-background/50 p-4 space-y-1 border border-black/5">
                     <p className="text-[8px] font-bold text-muted-foreground uppercase">Signal Time</p>
                     <p className="text-[10px] font-black uppercase text-foreground">{interceptAlert && new Date(interceptAlert.createdAt).toLocaleTimeString()}</p>
@@ -575,7 +580,7 @@ export default function DashboardPage() {
           <div className="p-8 pt-4 border-t border-black/5 flex-shrink-0 bg-background/30">
             <Button 
               onClick={() => setInterceptAlert(null)}
-              className="w-full h-16 neo-btn bg-white text-destructive hover:bg-destructive hover:text-white text-[11px] font-bold uppercase tracking-[0.4em] transition-all shadow-[6px_6px_15px_#d1d9e6,-6px_-6px_15px_#ffffff]"
+              className="w-full h-16 neo-btn bg-white text-destructive hover:bg-destructive hover:text-foreground text-[11px] font-bold uppercase tracking-[0.4em] transition-all"
             >
               CLOSE COMMAND
             </Button>
