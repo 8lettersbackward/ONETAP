@@ -116,7 +116,7 @@ export default function DashboardPage() {
   const [viewingNode, setViewingNode] = useState<Node | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'buddy' | 'node' | 'group' | 'link', name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'buddy' | 'node' | 'group' | 'link' | 'clear-notifications', name: string } | null>(null);
   const [pendingUpdate, setPendingUpdate] = useState<{ type: 'buddy' | 'node', data: any } | null>(null);
   const [interceptAlert, setInterceptAlert] = useState<any>(null);
 
@@ -442,6 +442,16 @@ export default function DashboardPage() {
     if (!user || !rtdb) return;
     try {
       await remove(ref(rtdb, `users/${user.uid}/buddyGroups/${id}`));
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Purge Error", description: err.message });
+    }
+  };
+
+  const clearNotifications = async () => {
+    if (!user || !rtdb || !notificationsRef) return;
+    try {
+      await remove(notificationsRef);
+      toast({ title: "Stream Purged", description: "All alert logs have been decommissioned." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Purge Error", description: err.message });
     }
@@ -797,7 +807,17 @@ export default function DashboardPage() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-8">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Alert Stream</h2>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Alert Stream</h2>
+                {notifications.length > 0 && (
+                  <Button 
+                    onClick={() => setDeleteConfirm({ id: 'all', type: 'clear-notifications', name: 'All Alerts' })}
+                    className="neo-btn h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-background text-destructive hover:bg-destructive/10 transition-all"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> CLEAR ALL
+                  </Button>
+                )}
+              </div>
               <div className="neo-flat p-6 sm:p-8">
                 <ScrollArea className="h-[500px] pr-4">
                   {notifications.length === 0 ? (
@@ -938,6 +958,7 @@ export default function DashboardPage() {
                 if (deleteConfirm?.type === 'buddy') deleteBuddy(deleteConfirm.id);
                 if (deleteConfirm?.type === 'node') deleteNode(deleteConfirm.id);
                 if (deleteConfirm?.type === 'group') deleteGroup(deleteConfirm.id);
+                if (deleteConfirm?.type === 'clear-notifications') clearNotifications();
                 setDeleteConfirm(null);
               }}
               className="neo-btn h-12 flex-1 text-[10px] font-black uppercase bg-destructive text-white hover:bg-destructive/90"
@@ -1238,4 +1259,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-    
