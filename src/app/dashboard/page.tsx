@@ -161,6 +161,7 @@ export default function DashboardPage() {
     if (!radarSearchTerm || !radarSearchTerm.trim() || radarSearchTerm.trim().length < 3) return [];
     const term = radarSearchTerm.toLowerCase().trim();
     return availableNodes.filter(node => {
+      // Hardened check for hardwareId to prevent runtime errors
       const hId = node.hardwareId ? String(node.hardwareId).toLowerCase() : "";
       return hId === term;
     });
@@ -790,9 +791,11 @@ export default function DashboardPage() {
                               </div>
                             </div>
                           </div>
-                          <Button size="sm" className="neo-btn w-full sm:w-auto h-8 px-4 text-[8px] font-black uppercase tracking-widest bg-background text-foreground hover:text-primary" onClick={() => n.latitude !== undefined && n.longitude !== undefined ? setInterceptAlert({ ...n, id: n.id }) : toast({ variant: "destructive", title: "Coordinates Unavailable", description: "No spatial data detected." })}>
-                            <Eye className="h-3.5 w-3.5 mr-2 text-primary/60" /> TACTICAL MAP
-                          </Button>
+                          {n.latitude !== undefined && n.longitude !== undefined && (
+                            <Button size="sm" className="neo-btn w-full sm:w-auto h-8 px-4 text-[8px] font-black uppercase tracking-widest bg-background text-foreground hover:text-primary" onClick={() => setInterceptAlert({ ...n, id: n.id })}>
+                              <Eye className="h-3.5 w-3.5 mr-2 text-primary/60" /> TACTICAL MAP
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))
