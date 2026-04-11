@@ -38,7 +38,6 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
     }
   };
 
-  // Initialize Map Instance
   useEffect(() => {
     mounted.current = true;
     if (!mapRef.current || !isValid || mapInstance.current) return;
@@ -58,7 +57,6 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
 
       mapInstance.current = map;
 
-      // Handle dialog animations/layout shifts
       const timer1 = setTimeout(() => {
         if (mounted.current && mapInstance.current) mapInstance.current.invalidateSize();
       }, 100);
@@ -82,9 +80,8 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
         markerRef.current = null;
       }
     };
-  }, []); // Only init once per mount
+  }, []);
 
-  // Update Marker and View on Prop Change
   useEffect(() => {
     if (!mapInstance.current || !isValid) return;
 
@@ -92,24 +89,24 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
       className: 'tactical-marker',
       html: `
         <div class="relative">
-          <div class="absolute -inset-6 bg-destructive/20 rounded-full animate-ping"></div>
-          <div class="absolute -inset-3 bg-destructive/10 rounded-full animate-pulse"></div>
-          <div class="relative h-8 w-8 bg-destructive rounded-full border-2 border-white flex items-center justify-center shadow-lg">
-            <div class="h-2.5 w-2.5 bg-white rounded-full"></div>
+          <div class="absolute -inset-8 bg-destructive/20 rounded-full animate-ping"></div>
+          <div class="absolute -inset-4 bg-destructive/10 rounded-full animate-pulse"></div>
+          <div class="relative h-10 w-10 bg-destructive rounded-full border-2 border-white flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+            <div class="h-3 w-3 bg-white rounded-full animate-pulse"></div>
           </div>
         </div>
       `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
     });
 
     const popupContent = `
-      <div class="p-1 min-w-[120px]">
-        <b class="text-destructive uppercase font-bold text-[10px] block mb-1">${label || 'SOS SIGNAL'}</b>
-        <span class="text-[8px] uppercase font-bold tracking-widest opacity-60">Critical Alert Detected</span>
-        <div class="mt-2 text-[8px] font-mono opacity-80">
-          LAT: ${lat.toFixed(4)}<br/>
-          LNG: ${lng.toFixed(4)}
+      <div class="p-2 min-w-[140px]">
+        <b class="text-destructive uppercase font-black text-[10px] block mb-1 tracking-wider">${label || 'SOS SIGNAL'}</b>
+        <span class="text-[8px] uppercase font-bold tracking-widest text-slate-800">Critical Alert Detected</span>
+        <div class="mt-3 p-2 bg-slate-50 rounded-lg text-[8px] font-mono text-slate-600 border border-slate-100 shadow-inner">
+          LAT: ${lat.toFixed(6)}<br/>
+          LNG: ${lng.toFixed(6)}
         </div>
       </div>
     `;
@@ -128,15 +125,14 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
       markerRef.current.openPopup();
     }
 
-    // Move view to follow signal
     mapInstance.current.panTo([lat, lng], { animate: true });
 
   }, [lat, lng, label, isValid]);
 
   if (!isValid) {
     return (
-      <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full rounded-xl bg-muted/10 flex flex-col items-center justify-center border-2 border-dashed border-primary/10">
-        <div className="p-8 bg-white/50 rounded-full mb-4">
+      <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full rounded-[2rem] bg-[#ECF0F3] flex flex-col items-center justify-center neo-inset border border-black/5">
+        <div className="p-8 bg-white/50 rounded-full mb-4 shadow-inner">
            <div className="h-10 w-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
         </div>
         <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary/60">Awaiting Signal Fix...</p>
@@ -145,7 +141,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
   }
 
   return (
-    <div className="relative h-[200px] sm:h-[250px] md:h-[350px] w-full rounded-xl overflow-hidden group border border-primary/5">
+    <div className="relative h-[200px] sm:h-[250px] md:h-[350px] w-full rounded-[2rem] overflow-hidden group border border-black/5 shadow-inner">
       <div 
         ref={mapRef} 
         className="h-full w-full z-10"
@@ -155,7 +151,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
         <Button 
           size="icon" 
           variant="secondary" 
-          className="h-10 w-10 rounded-xl shadow-xl border border-white/20 opacity-90 hover:opacity-100 transition-opacity duration-300 bg-white hover:bg-white"
+          className="h-10 w-10 neo-btn bg-white/90 hover:bg-white transition-all shadow-lg"
           onClick={resetView}
           title="Recenter Signal"
         >
@@ -164,10 +160,11 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
       </div>
       <style jsx global>{`
         .leaflet-popup-content-wrapper {
-          border-radius: 1rem;
+          border-radius: 1.5rem;
           padding: 0;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-          border: 1px solid rgba(239, 68, 68, 0.1);
+          background: #ffffff;
+          box-shadow: 10px 10px 20px rgba(0,0,0,0.1);
+          border: 1px solid rgba(0, 0, 0, 0.05);
         }
         .leaflet-popup-content {
           margin: 12px;
@@ -177,13 +174,13 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
         }
         .leaflet-control-zoom {
           border: none !important;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+          box-shadow: 6px 6px 15px rgba(0,0,0,0.1) !important;
           margin-bottom: 24px !important;
           margin-right: 16px !important;
         }
         .leaflet-control-zoom-in, .leaflet-control-zoom-out {
           background-color: white !important;
-          border-radius: 0.5rem !important;
+          border-radius: 0.75rem !important;
           margin-bottom: 2px;
           border: none !important;
           color: #3b82f6 !important;

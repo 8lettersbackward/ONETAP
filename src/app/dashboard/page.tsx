@@ -5,7 +5,6 @@ import { useUser, useDatabase, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +23,6 @@ import {
   Loader2,
   Trash2,
   LogOut,
-  UserPlus,
   PlusSquare,
   Eye,
   Thermometer,
@@ -33,26 +31,21 @@ import {
   AlertTriangle,
   Radar,
   ShieldAlert,
-  Search,
-  Check,
   X,
   ShieldCheck,
-  Navigation,
   Hexagon,
-  ChevronRight,
   Phone,
-  Layers,
   Activity,
+  Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
+import { ref, set, push, remove, update, onChildAdded, off, get } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useRtdb } from "@/firebase/database/use-rtdb";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
@@ -160,7 +153,6 @@ export default function DashboardPage() {
 
   const logOutTerminal = () => signOut(auth).then(() => router.push("/login"));
 
-  // CRUD Actions
   const handleSaveBuddy = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user || !rtdb) return;
@@ -261,7 +253,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-background/80 backdrop-blur-md border-t border-black/5 pb-8">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-background/80 backdrop-blur-md border-t border-black/5 pb-8 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -274,9 +266,9 @@ export default function DashboardPage() {
             )}
           >
             <item.icon className={cn("h-5 w-5", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
-            <span>{item.label}</span>
+            <span className="text-foreground">{item.label}</span>
             {notifications.length > 0 && item.id === 'notifications' && (
-              <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-primary rounded-full" />
+              <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-primary rounded-full shadow-[0_0_5px_var(--primary)]" />
             )}
           </button>
         ))}
@@ -307,7 +299,7 @@ export default function DashboardPage() {
                 )}
               >
                 <item.icon className={cn("h-4 w-4", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
-                <span>{item.label}</span>
+                <span className="text-foreground">{item.label}</span>
                 {notifications.length > 0 && item.id === 'notifications' && (
                   <span className="absolute top-1/2 -translate-y-1/2 right-6 h-1.5 w-1.5 bg-primary rounded-full" />
                 )}
@@ -319,7 +311,7 @@ export default function DashboardPage() {
         <div className="mt-auto">
           <div className="p-5 neo-flat space-y-4">
             <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9 neo-inset shrink-0">
+              <Avatar className="h-9 w-9 neo-inset shrink-0 border border-black/5">
                 <AvatarFallback className="bg-transparent text-[9px] font-bold text-foreground">{currentName[0].toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="overflow-hidden">
@@ -346,11 +338,11 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Buddies</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
-                  <Button onClick={() => { setEditingBuddy(null); setIsBuddyDialogOpen(true); }} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
-                    <PlusSquare className="h-4 w-4 mr-2" /> ENLIST
+                  <Button onClick={() => { setEditingBuddy(null); setIsBuddyDialogOpen(true); }} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
+                    <PlusSquare className="h-4 w-4 mr-2 text-primary" /> ENLIST
                   </Button>
-                  <Button onClick={() => setIsProtocolDialogOpen(true)} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-primary">
-                    <ShieldAlert className="h-4 w-4 mr-2" /> PROTOCOLS
+                  <Button onClick={() => setIsProtocolDialogOpen(true)} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
+                    <ShieldAlert className="h-4 w-4 mr-2 text-primary/60" /> PROTOCOLS
                   </Button>
                 </div>
               </div>
@@ -358,23 +350,23 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {buddies.length === 0 ? (
                   <div className="col-span-full neo-flat p-12 text-center opacity-30 flex flex-col items-center">
-                    <Smartphone className="h-12 w-12 mb-6" />
-                    <p className="text-[9px] font-bold uppercase tracking-[0.4em]">Operational Vault Empty</p>
+                    <Smartphone className="h-12 w-12 mb-6 text-foreground" />
+                    <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">Operational Vault Empty</p>
                   </div>
                 ) : (
                   buddies.map(buddy => (
-                    <div key={buddy.id} className="neo-flat p-6 space-y-4">
+                    <div key={buddy.id} className="neo-flat p-6 space-y-4 hover:shadow-lg transition-shadow duration-300">
                       <div className="flex justify-between items-start">
                         <div className="flex gap-4 items-center">
-                          <Avatar className="h-10 w-10 neo-inset">
-                            <AvatarFallback className="bg-transparent text-[10px] font-black">{buddy.name[0]}</AvatarFallback>
+                          <Avatar className="h-10 w-10 neo-inset border border-black/5">
+                            <AvatarFallback className="bg-transparent text-[10px] font-black text-foreground">{buddy.name[0]}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest">{buddy.name}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-foreground">{buddy.name}</p>
                             <p className="text-[8px] font-bold text-muted-foreground mt-1 uppercase tracking-widest">{buddy.phoneNumber}</p>
                           </div>
                         </div>
-                        <Badge className="neo-btn bg-background text-[7px] font-bold px-2 py-0.5 uppercase">ID-{buddy.id.slice(-4)}</Badge>
+                        <Badge className="neo-btn bg-background text-foreground text-[7px] font-bold px-2 py-0.5 uppercase border border-black/5">ID-{buddy.id.slice(-4)}</Badge>
                       </div>
                       <div className="flex gap-2 pt-2">
                         <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-primary" onClick={() => { setEditingBuddy(buddy); setIsBuddyDialogOpen(true); }}>
@@ -383,7 +375,7 @@ export default function DashboardPage() {
                         <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-destructive" onClick={() => deleteBuddy(buddy.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-foreground ml-auto">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-primary hover:text-foreground ml-auto shadow-inner bg-primary/5">
                           <Phone className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -398,41 +390,42 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Nodes</h2>
-                <Button onClick={() => { setEditingNode(null); setIsNodeDialogOpen(true); }} className="neo-btn w-full sm:w-auto h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
-                  <Cpu className="h-4 w-4 mr-2" /> ARM NODE
+                <Button onClick={() => { setEditingNode(null); setIsNodeDialogOpen(true); }} className="neo-btn w-full sm:w-auto h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
+                  <Cpu className="h-4 w-4 mr-2 text-primary" /> ARM NODE
                 </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {nodes.length === 0 ? (
                   <div className="col-span-full neo-flat p-12 text-center opacity-30 flex flex-col items-center">
-                    <Activity className="h-12 w-12 mb-6" />
-                    <p className="text-[9px] font-bold uppercase tracking-[0.4em]">No Active Assets</p>
+                    <Activity className="h-12 w-12 mb-6 text-foreground" />
+                    <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">No Active Assets</p>
                   </div>
                 ) : (
                   nodes.map(node => (
-                    <div key={node.id} className="neo-flat p-6 space-y-6">
+                    <div key={node.id} className="neo-flat p-6 space-y-6 hover:shadow-lg transition-shadow duration-300">
                       <div className="flex justify-between items-start">
                         <div className="flex gap-4 items-center">
-                          <div className={cn("h-10 w-10 neo-inset flex items-center justify-center", node.status === 'online' ? "text-primary" : "text-muted-foreground")}>
+                          <div className={cn("h-10 w-10 neo-inset flex items-center justify-center border border-black/5", node.status === 'online' ? "text-green-500 shadow-[inset_0_0_10px_rgba(34,197,94,0.1)]" : "text-muted-foreground")}>
                             <Cpu className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest">{node.nodeName}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-foreground">{node.nodeName}</p>
                             <p className="text-[8px] font-bold text-muted-foreground mt-1 uppercase tracking-widest">{node.hardwareId}</p>
                           </div>
                         </div>
-                        <Badge className={cn("text-[7px] font-bold px-3 py-1 uppercase rounded-full border-none", node.status === 'online' ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
+                        <Badge className={cn("text-[7px] font-bold px-3 py-1 uppercase rounded-full border border-black/5", node.status === 'online' ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
+                          <Circle className={cn("h-1.5 w-1.5 mr-1.5 fill-current", node.status === 'online' ? "animate-pulse" : "opacity-30")} />
                           {node.status}
                         </Badge>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="neo-inset p-3 space-y-1 text-center">
-                          <Thermometer className="h-3 w-3 mx-auto text-primary/60" />
+                        <div className="neo-inset p-3 space-y-1 text-center border border-black/5">
+                          <Thermometer className="h-3 w-3 mx-auto text-orange-500/60" />
                           <p className="text-[8px] font-black text-foreground">{node.temperature || '--'}°C</p>
                         </div>
-                        <div className="neo-inset p-3 space-y-1 text-center">
+                        <div className="neo-inset p-3 space-y-1 text-center border border-black/5">
                           <MapPin className="h-3 w-3 mx-auto text-primary/60" />
                           <p className="text-[8px] font-black text-foreground truncate">{node.place || 'Unknown'}</p>
                         </div>
@@ -445,7 +438,7 @@ export default function DashboardPage() {
                         <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-destructive" onClick={() => deleteNode(node.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-foreground ml-auto">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-green-500 hover:text-foreground ml-auto bg-green-500/5 shadow-inner">
                           <Activity className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -468,15 +461,15 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className="mb-6 p-6 neo-flat bg-background/20 relative group overflow-hidden">
+                      <div key={n.id} className={cn("mb-6 p-6 neo-flat relative group overflow-hidden transition-all duration-300", n.type === 'sos' ? "bg-destructive/5 shadow-[10px_10px_20px_#f2dede,-10px_-10px_20px_#ffffff]" : "bg-primary/5")}>
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 relative z-10">
                           <div className="flex gap-4 items-center">
                             {n.type === 'sos' ? (
-                              <div className="h-10 w-10 neo-inset flex items-center justify-center text-destructive animate-pulse">
+                              <div className="h-10 w-10 neo-inset flex items-center justify-center text-destructive animate-pulse border border-destructive/20">
                                 <AlertTriangle className="h-5 w-5" />
                               </div>
                             ) : (
-                              <div className="h-10 w-10 neo-inset flex items-center justify-center text-primary">
+                              <div className="h-10 w-10 neo-inset flex items-center justify-center text-primary border border-primary/20">
                                 <Radar className="h-5 w-5" />
                               </div>
                             )}
@@ -492,7 +485,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex gap-2 w-full sm:w-auto">
                             <Button size="sm" className="neo-btn flex-1 sm:flex-none h-8 px-4 text-[8px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
-                              <Eye className="h-3.5 w-3.5 mr-2" /> TACTICAL MAP
+                              <Eye className="h-3.5 w-3.5 mr-2 text-primary/60" /> TACTICAL MAP
                             </Button>
                           </div>
                         </div>
@@ -509,7 +502,7 @@ export default function DashboardPage() {
               <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Hub</h2>
               <div className="neo-flat p-8 min-h-[400px] flex items-center justify-center text-center">
                  <div className="space-y-6 opacity-30">
-                   <Radar className="h-12 w-12 mx-auto text-foreground" />
+                   <Radar className="h-12 w-12 mx-auto text-primary" />
                    <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">Terminal Section Initializing...</p>
                  </div>
               </div>
@@ -520,15 +513,15 @@ export default function DashboardPage() {
             <div className="space-y-8">
                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Personnel Profile</h2>
                <div className="neo-flat p-12 flex flex-col items-center gap-8">
-                  <div className="h-32 w-32 neo-inset flex items-center justify-center text-4xl font-black text-primary">
+                  <div className="h-32 w-32 neo-inset flex items-center justify-center text-4xl font-black text-primary border-2 border-primary/5">
                     {currentName[0].toUpperCase()}
                   </div>
                   <div className="text-center space-y-2">
-                    <p className="text-xl font-black uppercase tracking-[0.2em]">{currentName}</p>
+                    <p className="text-xl font-black uppercase tracking-[0.2em] text-foreground">{currentName}</p>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{user.email}</p>
                   </div>
-                  <Button onClick={() => router.push('/profile')} className="neo-btn h-12 px-8 text-[10px] font-bold uppercase tracking-[0.3em] bg-background text-foreground hover:text-primary">
-                    <Settings className="h-4 w-4 mr-3" /> CONFIGURE TERMINAL
+                  <Button onClick={() => router.push('/profile')} className="neo-btn h-12 px-8 text-[10px] font-bold uppercase tracking-[0.3em] bg-background text-foreground hover:text-primary transition-all">
+                    <Settings className="h-4 w-4 mr-3 text-primary/60" /> CONFIGURE TERMINAL
                   </Button>
                </div>
             </div>
@@ -538,11 +531,11 @@ export default function DashboardPage() {
 
       {/* SOS Intercept Modal */}
       <Dialog open={!!interceptAlert} onOpenChange={() => setInterceptAlert(null)}>
-        <DialogContent className="max-w-2xl neo-flat p-0 border-none bg-[#ECF0F3] [&>button]:hidden flex flex-col overflow-hidden max-h-[90vh]">
-          <DialogHeader className="p-8 pb-4 flex-shrink-0">
+        <DialogContent className="max-w-2xl neo-flat p-0 border-none bg-[#ECF0F3] [&>button]:hidden flex flex-col overflow-hidden max-h-[90vh] shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+          <DialogHeader className="p-8 pb-4 flex-shrink-0 bg-destructive/5 border-b border-destructive/10">
             <div className="flex justify-between items-center w-full">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 neo-inset flex items-center justify-center text-destructive animate-pulse">
+                <div className="h-12 w-12 neo-inset flex items-center justify-center text-destructive animate-pulse border border-destructive/30 bg-white">
                   <AlertTriangle className="h-6 w-6" />
                 </div>
                 <div>
@@ -550,32 +543,32 @@ export default function DashboardPage() {
                   <p className="text-[9px] font-bold text-destructive uppercase tracking-widest mt-1">High Intensity Alert Active</p>
                 </div>
               </div>
-              <Badge className="bg-destructive text-white border-none text-[8px] font-bold px-4 py-1 animate-pulse uppercase">Critical</Badge>
+              <Badge className="bg-destructive text-white border-none text-[8px] font-bold px-4 py-1 animate-pulse uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)]">Critical</Badge>
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-6">
-            <div className="neo-inset p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
+            <div className="neo-inset p-6 space-y-4 border border-destructive/10">
               <div className="flex items-center gap-4">
-                 <div className="h-10 w-10 neo-flat flex items-center justify-center text-foreground">
-                   <Smartphone className="h-5 w-5" />
+                 <div className="h-10 w-10 neo-flat flex items-center justify-center text-foreground bg-white">
+                   <Smartphone className="h-5 w-5 text-destructive/60" />
                  </div>
-                 <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">{interceptAlert?.message}</p>
+                 <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed text-foreground">{interceptAlert?.message}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                 <div className="neo-flat bg-background/50 p-4 space-y-1">
+                 <div className="neo-flat bg-background/50 p-4 space-y-1 border border-black/5">
                     <p className="text-[8px] font-bold text-muted-foreground uppercase">Sector Fix</p>
-                    <p className="text-[10px] font-black uppercase">{interceptAlert?.place || 'Unknown Sector'}</p>
+                    <p className="text-[10px] font-black uppercase text-foreground">{interceptAlert?.place || 'Unknown Sector'}</p>
                  </div>
-                 <div className="neo-flat bg-background/50 p-4 space-y-1">
+                 <div className="neo-flat bg-background/50 p-4 space-y-1 border border-black/5">
                     <p className="text-[8px] font-bold text-muted-foreground uppercase">Signal Time</p>
-                    <p className="text-[10px] font-black uppercase">{interceptAlert && new Date(interceptAlert.createdAt).toLocaleTimeString()}</p>
+                    <p className="text-[10px] font-black uppercase text-foreground">{interceptAlert && new Date(interceptAlert.createdAt).toLocaleTimeString()}</p>
                  </div>
               </div>
             </div>
 
             {interceptAlert?.latitude && (
-              <div className="neo-flat overflow-hidden">
+              <div className="neo-flat overflow-hidden border border-destructive/10 shadow-lg">
                 <SOSMap 
                   latitude={interceptAlert.latitude} 
                   longitude={interceptAlert.longitude} 
@@ -585,10 +578,10 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="p-8 pt-4 border-t border-black/5 flex-shrink-0">
+          <div className="p-8 pt-4 border-t border-black/5 flex-shrink-0 bg-background/30">
             <Button 
               onClick={() => setInterceptAlert(null)}
-              className="w-full h-16 neo-btn bg-background text-destructive hover:bg-destructive hover:text-white text-[11px] font-bold uppercase tracking-[0.4em] transition-all"
+              className="w-full h-16 neo-btn bg-white text-destructive hover:bg-destructive hover:text-white text-[11px] font-bold uppercase tracking-[0.4em] transition-all shadow-[6px_6px_15px_#d1d9e6,-6px_-6px_15px_#ffffff]"
             >
               CLOSE COMMAND
             </Button>
@@ -598,23 +591,24 @@ export default function DashboardPage() {
 
       {/* Buddy CRUD Dialog */}
       <Dialog open={isBuddyDialogOpen} onOpenChange={setIsBuddyDialogOpen}>
-        <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md">
+        <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+              <ShieldCheck className="h-5 w-5 text-primary" />
               {editingBuddy ? "Edit Personnel" : "Enlist Personnel"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveBuddy} className="space-y-6 mt-4">
             <div className="space-y-2">
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Personnel Name</Label>
-              <Input name="name" defaultValue={editingBuddy?.name} required className="h-12 neo-inset bg-background text-foreground" />
+              <Input name="name" defaultValue={editingBuddy?.name} required className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
             <div className="space-y-2">
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Contact Signal (Phone)</Label>
-              <Input name="phoneNumber" defaultValue={editingBuddy?.phoneNumber} required className="h-12 neo-inset bg-background text-foreground" />
+              <Input name="phoneNumber" defaultValue={editingBuddy?.phoneNumber} required className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
             <DialogFooter className="pt-4">
-              <Button type="submit" className="w-full h-14 neo-btn bg-background text-foreground hover:text-primary text-[10px] font-bold uppercase tracking-[0.2em]">
+              <Button type="submit" className="w-full h-14 neo-btn bg-background text-foreground hover:text-primary text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
                 {editingBuddy ? "SYNCHRONIZE" : "INITIALIZE"}
               </Button>
             </DialogFooter>
@@ -624,27 +618,28 @@ export default function DashboardPage() {
 
       {/* Node CRUD Dialog */}
       <Dialog open={isNodeDialogOpen} onOpenChange={setIsNodeDialogOpen}>
-        <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md">
+        <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+              <Cpu className="h-5 w-5 text-primary" />
               {editingNode ? "Edit Node" : "Arm New Node"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveNode} className="space-y-6 mt-4">
             <div className="space-y-2">
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Asset Name</Label>
-              <Input name="nodeName" defaultValue={editingNode?.nodeName} required className="h-12 neo-inset bg-background text-foreground" />
+              <Input name="nodeName" defaultValue={editingNode?.nodeName} required className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
             <div className="space-y-2">
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Hardware ID Signature</Label>
-              <Input name="hardwareId" defaultValue={editingNode?.hardwareId} required className="h-12 neo-inset bg-background text-foreground" />
+              <Input name="hardwareId" defaultValue={editingNode?.hardwareId} required className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
             <div className="space-y-2">
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Deployment Sector (Place)</Label>
-              <Input name="place" defaultValue={editingNode?.place} placeholder="e.g. Master Bedroom" className="h-12 neo-inset bg-background text-foreground" />
+              <Input name="place" defaultValue={editingNode?.place} placeholder="e.g. Master Bedroom" className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
             <DialogFooter className="pt-4">
-              <Button type="submit" className="w-full h-14 neo-btn bg-background text-foreground hover:text-primary text-[10px] font-bold uppercase tracking-[0.2em]">
+              <Button type="submit" className="w-full h-14 neo-btn bg-background text-foreground hover:text-primary text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
                 {editingNode ? "SYNCHRONIZE" : "ARM ASSET"}
               </Button>
             </DialogFooter>
@@ -654,16 +649,19 @@ export default function DashboardPage() {
 
       {/* Protocols Dialog */}
       <Dialog open={isProtocolDialogOpen} onOpenChange={setIsProtocolDialogOpen}>
-        <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md">
+        <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">Security Protocols</DialogTitle>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+              <ShieldAlert className="h-5 w-5 text-primary" />
+              Security Protocols
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-8 mt-4">
             <form onSubmit={handleAddGroup} className="space-y-3">
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">New Protocol Group</Label>
               <div className="flex gap-2">
-                <Input name="groupName" required className="h-10 neo-inset bg-background text-foreground flex-1" />
-                <Button type="submit" size="icon" className="h-10 w-10 neo-btn bg-background text-primary">
+                <Input name="groupName" required className="h-10 neo-inset bg-background text-foreground flex-1 border-none px-4" />
+                <Button type="submit" size="icon" className="h-10 w-10 neo-btn bg-background text-primary transition-all">
                   <PlusSquare className="h-4 w-4" />
                 </Button>
               </div>
@@ -676,9 +674,9 @@ export default function DashboardPage() {
                   <p className="text-[9px] text-center text-muted-foreground py-4 uppercase">No Groups Defined</p>
                 ) : (
                   groups.map(group => (
-                    <div key={group.id} className="flex justify-between items-center neo-inset p-3 mb-2">
-                      <span className="text-[10px] font-black uppercase">{group.name}</span>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteGroup(group.id)}>
+                    <div key={group.id} className="flex justify-between items-center neo-inset p-3 mb-2 border border-black/5 bg-white/30 shadow-inner">
+                      <span className="text-[10px] font-black uppercase text-foreground">{group.name}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:bg-destructive/10 rounded-full" onClick={() => deleteGroup(group.id)}>
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
