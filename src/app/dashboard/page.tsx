@@ -89,6 +89,7 @@ interface Node {
 }
 
 export default function DashboardPage() {
+  // 1. All hooks at the absolute top
   const { user, loading: userLoading } = useUser();
   const { auth } = useFirebase();
   const rtdb = useDatabase();
@@ -98,6 +99,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>('buddies');
   const [hasMounted, setHasMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [radarSearchTerm, setRadarSearchTerm] = useState("");
 
   const [isBuddyDialogOpen, setIsBuddyDialogOpen] = useState(false);
   const [isNodeDialogOpen, setIsNodeDialogOpen] = useState(false);
@@ -115,7 +117,7 @@ export default function DashboardPage() {
   const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const linksRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/links`) : null, [rtdb, user]);
-  const allUsersRef = useMemo(() => userRole === 'guardian' ? ref(rtdb, `users`) : null, [rtdb, userRole]);
+  const allUsersRef = useMemo(() => (user && rtdb) ? ref(rtdb, `users`) : null, [rtdb, user]);
 
   const { data: buddiesData } = useRtdb(buddiesRef);
   const { data: nodesData } = useRtdb(nodesRef);
@@ -149,12 +151,20 @@ export default function DashboardPage() {
     return nodeDiscovery;
   }, [allUsersData, user]);
 
+  const radarSearchResults = useMemo(() => {
+    if (!radarSearchTerm) return [];
+    return availableNodes.filter(node => 
+      node.hardwareId.toLowerCase().includes(radarSearchTerm.toLowerCase()) ||
+      node.nodeName.toLowerCase().includes(radarSearchTerm.toLowerCase())
+    );
+  }, [availableNodes, radarSearchTerm]);
+
   const currentName = useMemo(() => user?.email?.split('@')[0] || "Personnel", [user]);
 
   const navItems = useMemo(() => {
     return userRole === 'guardian' 
-      ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'linked', label: 'OUTGOING', icon: Link2 }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
-      : [{ id: 'buddies', label: 'BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'NODES', icon: Cpu }, { id: 'linked', label: 'INCOMING', icon: Link2 }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
+      ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'linked', label: 'LINKS', icon: Link2 }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
+      : [{ id: 'buddies', label: 'BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'NODES', icon: Cpu }, { id: 'linked', label: 'HANDSHAKES', icon: Link2 }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
   }, [userRole]);
 
   useEffect(() => {
@@ -719,15 +729,34 @@ export default function DashboardPage() {
 
           {activeTab === 'guardian' && (
             <div className="space-y-8">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Radar</h2>
+              <div className="flex flex-col gap-4">
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Radar</h2>
+                <div className="flex gap-2 max-w-md">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
+                    <Input 
+                      placeholder="SCAN HARDWARE ID..." 
+                      className="h-12 neo-inset bg-background text-foreground border-none pl-12 font-black uppercase text-[10px] tracking-widest"
+                      value={radarSearchTerm}
+                      onChange={(e) => setRadarSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableNodes.length === 0 ? (
+                {!radarSearchTerm ? (
                   <div className="col-span-full neo-flat p-12 text-center opacity-30 flex flex-col items-center">
                     <Radar className="h-12 w-12 mb-6 text-foreground" />
-                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-foreground">No Assets Detected in Proximity</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-foreground">Enter Hardware ID to Scan</p>
+                  </div>
+                ) : radarSearchResults.length === 0 ? (
+                  <div className="col-span-full neo-flat p-12 text-center opacity-30 flex flex-col items-center">
+                    <ShieldX className="h-12 w-12 mb-6 text-destructive/60" />
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-foreground">No Asset Signature Detected</p>
                   </div>
                 ) : (
-                  availableNodes.map(node => {
+                  radarSearchResults.map(node => {
                     const existingLink = links.find(l => l.hardwareId === node.hardwareId);
                     return (
                       <div key={node.id} className="neo-flat p-6 space-y-4 group">
@@ -746,7 +775,7 @@ export default function DashboardPage() {
                         </div>
                         {existingLink ? (
                           <div className="w-full py-3 neo-inset text-center bg-white/50 border border-black/5">
-                            <p className="text-[8px] font-black uppercase text-primary flex items-center justify-center gap-2">
+                            <p className={cn("text-[8px] font-black uppercase flex items-center justify-center gap-2", existingLink.status === 'linked' ? "text-green-600" : "text-primary animate-pulse")}>
                               {existingLink.status === 'linked' ? <ShieldCheck className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
                               {existingLink.status === 'linked' ? "ACTIVE LINK" : "PENDING AUTHORIZATION"}
                             </p>
@@ -863,7 +892,7 @@ export default function DashboardPage() {
                         id={`buddy-group-${group.id}`} 
                         checked={selectedGroups.includes(group.id)} 
                         onCheckedChange={(checked) => toggleGroupSelection(group.id, !!checked)}
-                        className="border-primary/40 h-5 w-5 rounded-md"
+                        className="border-primary/40 h-5 w-5 rounded-sm"
                       />
                       <Label htmlFor={`buddy-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none leading-none pt-0.5">{group.name}</Label>
                     </div>
@@ -911,7 +940,7 @@ export default function DashboardPage() {
                         id={`node-group-${group.id}`} 
                         checked={selectedGroups.includes(group.id)} 
                         onCheckedChange={(checked) => toggleGroupSelection(group.id, !!checked)}
-                        className="border-primary/40 h-5 w-5 rounded-md"
+                        className="border-primary/40 h-5 w-5 rounded-sm"
                       />
                       <Label htmlFor={`node-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none leading-none pt-0.5">{group.name}</Label>
                     </div>
