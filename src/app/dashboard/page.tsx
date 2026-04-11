@@ -207,7 +207,8 @@ export default function DashboardPage() {
         const now = Date.now();
         const timestamp = val.timestamp || val.createdAt || 0;
         
-        if (activeTab !== 'notifications') {
+        // Only set indicator if this notification is fresh (after component mount)
+        if (activeTab !== 'notifications' && (now - timestamp < 10000)) {
           setHasNewAlerts(true);
         }
 
@@ -364,8 +365,12 @@ export default function DashboardPage() {
     const nodeName = formData.get('tacticalNodeName') as string;
     const hardwareId = formData.get('hardwareId') as string;
 
-    const isHardwareIdDuplicate = nodes.some(n => n.hardwareId === hardwareId && n.id !== editingNode?.id) || 
-                                 availableNodes.some(n => n.hardwareId === hardwareId);
+    const normalizedHardwareId = hardwareId.trim().toLowerCase();
+    const normalizedNodeName = nodeName.trim().toLowerCase();
+
+    // Global Hardware ID Uniqueness Check
+    const isHardwareIdDuplicate = nodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId && n.id !== editingNode?.id) || 
+                                 availableNodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId);
     
     if (isHardwareIdDuplicate) {
       toast({ 
@@ -376,7 +381,8 @@ export default function DashboardPage() {
       return;
     }
 
-    const isNodeNameDuplicate = nodes.some(n => n.nodeName.toLowerCase() === nodeName.toLowerCase() && n.id !== editingNode?.id);
+    // Local Node Name Uniqueness Check
+    const isNodeNameDuplicate = nodes.some(n => n.nodeName.toLowerCase() === normalizedNodeName && n.id !== editingNode?.id);
     
     if (isNodeNameDuplicate) {
       toast({ 
@@ -511,7 +517,7 @@ export default function DashboardPage() {
             <item.icon className={cn("h-5 w-5", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
             <span className="text-foreground font-black">{item.label}</span>
             {hasNewAlerts && item.id === 'notifications' && (
-              <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-primary rounded-full animate-pulse" />
+              <span className="absolute top-0 right-1 h-2 w-2 bg-primary rounded-full animate-pulse border-2 border-background" />
             )}
             {(links.some(l => l.status === 'pending' || l.trackingRequest === 'requested')) && (item.id === 'linked' || item.id === 'guardian') && (
               <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-destructive rounded-full animate-pulse" />
@@ -543,7 +549,7 @@ export default function DashboardPage() {
                 <item.icon className={cn("h-4 w-4", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
                 <span className="text-foreground">{item.label}</span>
                 {hasNewAlerts && item.id === 'notifications' && (
-                  <span className="absolute top-1/2 -translate-y-1/2 right-6 h-1.5 w-1.5 bg-primary rounded-full animate-pulse" />
+                  <span className="absolute top-1/2 -translate-y-1/2 right-6 h-2 w-2 bg-primary rounded-full animate-pulse border-2 border-background shadow-lg" />
                 )}
                 {(links.some(l => l.status === 'pending' || l.trackingRequest === 'requested')) && (item.id === 'linked' || item.id === 'guardian') && (
                   <span className="absolute top-1/2 -translate-y-1/2 right-6 h-1.5 w-1.5 bg-destructive rounded-full animate-pulse" />
@@ -664,9 +670,9 @@ export default function DashboardPage() {
                             <p className="text-[8px] font-black text-muted-foreground mt-1 uppercase tracking-widest">{node.hardwareId}</p>
                           </div>
                         </div>
-                        <Badge className={cn("text-[7px] font-black px-3 py-1 uppercase rounded-full border border-black/5", node.status === 'online' ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
-                          <Circle className={cn("h-1.5 w-1.5 mr-1.5 fill-current", node.status === 'online' ? "animate-pulse" : "opacity-30")} />
-                          {node.status}
+                        <Badge className={cn("text-[7px] font-black px-3 py-1 uppercase rounded-full border border-black/5 bg-green-500/10 text-green-600")}>
+                          <Circle className="h-1.5 w-1.5 mr-1.5 fill-current animate-pulse" />
+                          ONLINE
                         </Badge>
                       </div>
 
@@ -720,8 +726,8 @@ export default function DashboardPage() {
                 ) : (
                   <>
                     {userRole !== 'guardian' && links.map(link => (
-                      <div key={link.id} className={cn("neo-flat p-6 space-y-4", link.status === 'pending' || link.trackingRequest === 'requested' ? "bg-primary/5" : "bg-white")}>
-                        <div className="flex justify-between items-start gap-2">
+                      <div key={link.id} className={cn("neo-flat p-6 space-y-4", (link.status === 'pending' || link.trackingRequest === 'requested') ? "bg-primary/5" : "bg-white")}>
+                        <div className="flex justify-between items-start gap-4">
                           <div className="flex gap-3 items-center min-w-0 flex-1">
                             <Avatar className="h-10 w-10 neo-inset border border-black/5 shrink-0">
                               <AvatarFallback className="bg-transparent text-[10px] font-black text-foreground">{link.guardianEmail?.[0].toUpperCase() || 'G'}</AvatarFallback>
@@ -1261,7 +1267,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="flex-1 overflow-y-auto pr-2 space-y-6 mt-4">
             <div className="neo-inset p-6 flex flex-col items-center gap-4 text-center">
-              <div className={cn("h-16 w-16 neo-flat flex items-center justify-center border border-black/5", viewingNode?.status === 'online' ? "text-green-500" : "text-muted-foreground")}>
+              <div className={cn("h-16 w-16 neo-flat flex items-center justify-center border border-black/5 text-green-500")}>
                 <Cpu className="h-8 w-8" />
               </div>
               <div>
@@ -1273,9 +1279,9 @@ export default function DashboardPage() {
                   </p>
                 )}
               </div>
-              <Badge className={cn("text-[8px] font-black px-4 py-1.5 uppercase rounded-full border border-black/5", viewingNode?.status === 'online' ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground")}>
-                <Circle className={cn("h-1.5 w-1.5 mr-2 fill-current", viewingNode?.status === 'online' ? "animate-pulse" : "opacity-30")} />
-                {viewingNode?.status}
+              <Badge className={cn("text-[8px] font-black px-4 py-1.5 uppercase rounded-full border border-black/5 bg-green-500/10 text-green-600")}>
+                <Circle className="h-1.5 w-1.5 mr-2 fill-current animate-pulse" />
+                ONLINE
               </Badge>
             </div>
 
