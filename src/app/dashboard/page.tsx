@@ -348,7 +348,7 @@ export default function DashboardPage() {
       nodeName: formData.get('tacticalNodeName') as string,
       hardwareId: formData.get('hardwareId') as string,
       status: editingNode?.status || 'offline',
-      temperature: editingNode?.temperature || 24.5,
+      temperature: parseFloat(formData.get('tacticalTemperature') as string) || 24.5,
       targetGroups: selectedGroups
     };
 
@@ -997,6 +997,10 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Hardware ID</Label>
               <Input name="hardwareId" defaultValue={editingNode?.hardwareId} required className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Calibration Temperature (°C)</Label>
+              <Input name="tacticalTemperature" type="number" step="0.1" defaultValue={editingNode?.temperature || 24.5} required className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" />
             </div>
 
             <div className="space-y-3">
