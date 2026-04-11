@@ -344,9 +344,38 @@ export default function DashboardPage() {
     e.preventDefault();
     if (!user || !rtdb) return;
     const formData = new FormData(e.currentTarget);
+    const nodeName = formData.get('tacticalNodeName') as string;
+    const hardwareId = formData.get('hardwareId') as string;
+
+    // IDENTITY UNIQUENESS VALIDATION
+    // Check Hardware ID globally across all discovered assets
+    const isHardwareIdDuplicate = nodes.some(n => n.hardwareId === hardwareId && n.id !== editingNode?.id) || 
+                                 availableNodes.some(n => n.hardwareId === hardwareId);
+    
+    if (isHardwareIdDuplicate) {
+      toast({ 
+        variant: "destructive", 
+        title: "Signature Conflict", 
+        description: "This Hardware ID is already registered in the tactical network." 
+      });
+      return;
+    }
+
+    // Check Node Name locally within personnel's own vault
+    const isNodeNameDuplicate = nodes.some(n => n.nodeName.toLowerCase() === nodeName.toLowerCase() && n.id !== editingNode?.id);
+    
+    if (isNodeNameDuplicate) {
+      toast({ 
+        variant: "destructive", 
+        title: "Naming Conflict", 
+        description: "An asset with this name already exists in your vault." 
+      });
+      return;
+    }
+
     const nodeData = {
-      nodeName: formData.get('tacticalNodeName') as string,
-      hardwareId: formData.get('hardwareId') as string,
+      nodeName,
+      hardwareId,
       status: editingNode?.status || 'online',
       temperature: parseFloat(formData.get('tacticalTemperature') as string) || 24.5,
       targetGroups: selectedGroups
@@ -433,7 +462,7 @@ export default function DashboardPage() {
 
   if (userLoading || !hasMounted) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
@@ -662,7 +691,7 @@ export default function DashboardPage() {
                     {userRole !== 'guardian' && links.map(link => (
                       <div key={link.id} className={cn("neo-flat p-6 space-y-4", link.status === 'pending' || link.trackingRequest === 'requested' ? "bg-primary/5" : "bg-white")}>
                         <div className="flex justify-between items-start gap-2">
-                          <div className="flex gap-3 items-center min-w-0">
+                          <div className="flex gap-3 items-center min-w-0 flex-1">
                             <Avatar className="h-10 w-10 neo-inset border border-black/5 shrink-0">
                               <AvatarFallback className="bg-transparent text-[10px] font-black text-foreground">{link.guardianEmail?.[0].toUpperCase() || 'G'}</AvatarFallback>
                             </Avatar>
@@ -711,7 +740,7 @@ export default function DashboardPage() {
                       return (
                         <div key={link.id} className="neo-flat p-6 space-y-4">
                           <div className="flex justify-between items-start gap-4">
-                            <div className="flex gap-4 items-center min-w-0">
+                            <div className="flex gap-4 items-center min-w-0 flex-1">
                               <Avatar className="h-10 w-10 neo-inset border border-black/5 shrink-0">
                                 <AvatarFallback className="bg-transparent text-[10px] font-black text-foreground">{link.targetEmail?.[0].toUpperCase() || 'U'}</AvatarFallback>
                               </Avatar>
