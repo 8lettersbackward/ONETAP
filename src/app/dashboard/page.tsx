@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Dialog,
   DialogContent,
@@ -47,6 +48,7 @@ import {
   Activity,
   Circle,
   Search,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, push, remove, update, onChildAdded, off, get } from "firebase/database";
@@ -97,6 +99,7 @@ export default function DashboardPage() {
   const [isProtocolDialogOpen, setIsProtocolDialogOpen] = useState(false);
   const [editingBuddy, setEditingBuddy] = useState<Buddy | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   
   // Confirmation States
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'buddy' | 'node' | 'group', name: string } | null>(null);
@@ -163,6 +166,12 @@ export default function DashboardPage() {
 
   const logOutTerminal = () => signOut(auth).then(() => router.push("/login"));
 
+  const toggleGroupSelection = (groupId: string) => {
+    setSelectedGroups(prev => 
+      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+    );
+  };
+
   const handleSaveBuddy = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user || !rtdb) return;
@@ -170,7 +179,7 @@ export default function DashboardPage() {
     const buddyData = {
       name: formData.get('name') as string,
       phoneNumber: formData.get('phoneNumber') as string,
-      groups: [] as string[]
+      groups: selectedGroups
     };
 
     if (editingBuddy) {
@@ -178,7 +187,7 @@ export default function DashboardPage() {
     } else {
       try {
         await push(ref(rtdb, `users/${user.uid}/buddies`), buddyData);
-        toast({ title: "Personnel Enlisted", description: "New buddy added to vault." });
+        toast({ title: "Personnel Enlisted", description: "New buddy added to vault with protocol mapping." });
         setIsBuddyDialogOpen(false);
       } catch (err: any) {
         toast({ variant: "destructive", title: "Vault Error", description: err.message });
@@ -195,6 +204,7 @@ export default function DashboardPage() {
       hardwareId: formData.get('hardwareId') as string,
       status: 'offline',
       temperature: 24.5,
+      targetGroups: selectedGroups
     };
 
     if (editingNode) {
@@ -202,7 +212,7 @@ export default function DashboardPage() {
     } else {
       try {
         await push(ref(rtdb, `users/${user.uid}/nodes`), nodeData);
-        toast({ title: "Node Armed", description: "New hardware asset registered." });
+        toast({ title: "Node Armed", description: "New hardware asset registered with target protocols." });
         setIsNodeDialogOpen(false);
       } catch (err: any) {
         toast({ variant: "destructive", title: "Hardware Error", description: err.message });
@@ -215,12 +225,12 @@ export default function DashboardPage() {
     try {
       if (pendingUpdate.type === 'buddy' && editingBuddy) {
         await update(ref(rtdb, `users/${user.uid}/buddies/${editingBuddy.id}`), pendingUpdate.data);
-        toast({ title: "Personnel Updated", description: "Identity signature synchronized." });
+        toast({ title: "Personnel Updated", description: "Identity signature and protocols synchronized." });
         setIsBuddyDialogOpen(false);
         setEditingBuddy(null);
       } else if (pendingUpdate.type === 'node' && editingNode) {
         await update(ref(rtdb, `users/${user.uid}/nodes/${editingNode.id}`), pendingUpdate.data);
-        toast({ title: "Node Updated", description: "Hardware configuration synchronized." });
+        toast({ title: "Node Updated", description: "Hardware configuration and target protocols synchronized." });
         setIsNodeDialogOpen(false);
         setEditingNode(null);
       }
@@ -354,7 +364,7 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Buddies</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
-                  <Button onClick={() => { setEditingBuddy(null); setIsBuddyDialogOpen(true); }} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
+                  <Button onClick={() => { setEditingBuddy(null); setSelectedGroups([]); setIsBuddyDialogOpen(true); }} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
                     <PlusSquare className="h-4 w-4 mr-2 text-primary" /> ENLIST
                   </Button>
                   <Button onClick={() => setIsProtocolDialogOpen(true)} className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
@@ -383,8 +393,22 @@ export default function DashboardPage() {
                         </div>
                         <Badge className="neo-btn bg-background text-foreground text-[7px] font-bold px-2 py-0.5 uppercase border border-black/5">ID-{buddy.id.slice(-4)}</Badge>
                       </div>
+                      
+                      {buddy.groups && buddy.groups.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {buddy.groups.map(gid => {
+                            const groupName = groups.find(g => g.id === gid)?.name || "Unknown Group";
+                            return (
+                              <Badge key={gid} className="bg-primary/5 text-primary text-[7px] font-black border-none px-2 py-0.5 rounded-sm uppercase tracking-tighter">
+                                {groupName}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <div className="flex gap-2 pt-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-primary" onClick={() => { setEditingBuddy(buddy); setIsBuddyDialogOpen(true); }}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-primary" onClick={() => { setEditingBuddy(buddy); setSelectedGroups(buddy.groups || []); setIsBuddyDialogOpen(true); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-destructive" onClick={() => setDeleteConfirm({ id: buddy.id, type: 'buddy', name: buddy.name })}>
@@ -405,7 +429,7 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Nodes</h2>
-                <Button onClick={() => { setEditingNode(null); setIsNodeDialogOpen(true); }} className="neo-btn w-full sm:w-auto h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
+                <Button onClick={() => { setEditingNode(null); setSelectedGroups([]); setIsNodeDialogOpen(true); }} className="neo-btn w-full sm:w-auto h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
                   <Cpu className="h-4 w-4 mr-2 text-primary" /> ARM NODE
                 </Button>
               </div>
@@ -433,12 +457,26 @@ export default function DashboardPage() {
                           {node.status}
                         </Badge>
                       </div>
+
+                      {node.targetGroups && node.targetGroups.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {node.targetGroups.map(gid => {
+                            const groupName = groups.find(g => g.id === gid)?.name || "Unknown Group";
+                            return (
+                              <Badge key={gid} className="bg-secondary text-foreground text-[7px] font-black border border-black/5 px-2 py-0.5 rounded-sm uppercase tracking-tighter">
+                                {groupName}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <div className="neo-inset p-3 space-y-1 text-center border border-black/5">
                         <Thermometer className="h-3 w-3 mx-auto text-orange-500/60" />
                         <p className="text-[8px] font-black text-foreground">{node.temperature || '--'}°C</p>
                       </div>
                       <div className="flex gap-2 pt-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-primary" onClick={() => { setEditingNode(node); setIsNodeDialogOpen(true); }}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-primary" onClick={() => { setEditingNode(node); setSelectedGroups(node.targetGroups || []); setIsNodeDialogOpen(true); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-destructive" onClick={() => setDeleteConfirm({ id: node.id, type: 'node', name: node.nodeName })}>
@@ -585,12 +623,12 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Existing Dialogs (Buddies, Nodes, Protocols, etc.) */}
+      {/* Buddy Dialog */}
       <Dialog open={isBuddyDialogOpen} onOpenChange={setIsBuddyDialogOpen}>
         <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 text-primary" />
+              <Users className="h-5 w-5 text-primary" />
               {editingBuddy ? "Edit Personnel" : "Enlist Personnel"}
             </DialogTitle>
           </DialogHeader>
@@ -603,6 +641,28 @@ export default function DashboardPage() {
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Contact Signal (Phone)</Label>
               <Input name="phoneNumber" defaultValue={editingBuddy?.phoneNumber} required className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
+            
+            <div className="space-y-3">
+              <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Protocol Assignment</Label>
+              <ScrollArea className="h-32 neo-inset p-4 bg-white/20">
+                {groups.length === 0 ? (
+                  <p className="text-[8px] text-center text-muted-foreground uppercase py-4">No protocols defined in hub</p>
+                ) : (
+                  groups.map(group => (
+                    <div key={group.id} className="flex items-center space-x-3 mb-3">
+                      <Checkbox 
+                        id={`group-${group.id}`} 
+                        checked={selectedGroups.includes(group.id)} 
+                        onCheckedChange={() => toggleGroupSelection(group.id)}
+                        className="border-primary/30"
+                      />
+                      <label htmlFor={`group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none">{group.name}</label>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
+            </div>
+
             <DialogFooter className="pt-4">
               <Button type="submit" className="w-full h-14 neo-btn bg-background text-foreground hover:text-primary text-[10px] font-bold uppercase tracking-[0.2em]">
                 {editingBuddy ? "SYNCHRONIZE" : "INITIALIZE"}
@@ -612,6 +672,7 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Node Dialog */}
       <Dialog open={isNodeDialogOpen} onOpenChange={setIsNodeDialogOpen}>
         <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <DialogHeader>
@@ -629,6 +690,28 @@ export default function DashboardPage() {
               <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Hardware ID Signature</Label>
               <Input name="hardwareId" defaultValue={editingNode?.hardwareId} required className="h-12 neo-inset bg-background text-foreground border-none px-5" />
             </div>
+
+            <div className="space-y-3">
+              <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Target Protocols</Label>
+              <ScrollArea className="h-32 neo-inset p-4 bg-white/20">
+                {groups.length === 0 ? (
+                  <p className="text-[8px] text-center text-muted-foreground uppercase py-4">No protocols defined in hub</p>
+                ) : (
+                  groups.map(group => (
+                    <div key={group.id} className="flex items-center space-x-3 mb-3">
+                      <Checkbox 
+                        id={`node-group-${group.id}`} 
+                        checked={selectedGroups.includes(group.id)} 
+                        onCheckedChange={() => toggleGroupSelection(group.id)}
+                        className="border-primary/30"
+                      />
+                      <label htmlFor={`node-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none">{group.name}</label>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
+            </div>
+
             <DialogFooter className="pt-4">
               <Button type="submit" className="w-full h-14 neo-btn bg-background text-foreground hover:text-primary text-[10px] font-bold uppercase tracking-[0.2em]">
                 {editingNode ? "SYNCHRONIZE" : "ARM ASSET"}
