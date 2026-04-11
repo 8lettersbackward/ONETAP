@@ -347,7 +347,7 @@ export default function DashboardPage() {
     const nodeData = {
       nodeName: formData.get('tacticalNodeName') as string,
       hardwareId: formData.get('hardwareId') as string,
-      status: editingNode?.status || 'offline',
+      status: editingNode?.status || 'online',
       temperature: parseFloat(formData.get('tacticalTemperature') as string) || 24.5,
       targetGroups: selectedGroups
     };
