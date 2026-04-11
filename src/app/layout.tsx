@@ -5,7 +5,7 @@ import { Navbar } from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: '1tap | Emergency Buddy',
+  title: '1TAP | Emergency Buddy',
   description: 'Instant emergency help and personal safety orchestration',
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased selection:bg-accent selection:text-accent-foreground overflow-x-hidden min-h-screen bg-background" suppressHydrationWarning>
         <FirebaseClientProvider>
           <Navbar />
-          <main className="min-h-screen w-full overflow-x-hidden">
+          <main className="min-h-screen w-full overflow-x-hidden pt-10">
             {children}
           </main>
           <Toaster />

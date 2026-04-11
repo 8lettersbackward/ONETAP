@@ -2,7 +2,7 @@
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ import { useRtdb } from "@/firebase/database/use-rtdb";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
-  loading: () => <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full neo-inset animate-pulse flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40 text-foreground">Initializing Terminal Map...</div>
+  loading: () => <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full neo-inset animate-pulse flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40 text-foreground">Initializing Tactical Map...</div>
 });
 
 type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings' | 'guardian';
@@ -82,6 +82,7 @@ interface Node {
 }
 
 export default function DashboardPage() {
+  // 1. Hooks (Top Level Only)
   const { user, loading: userLoading } = useUser();
   const { auth } = useFirebase();
   const rtdb = useDatabase();
@@ -142,8 +143,8 @@ export default function DashboardPage() {
         const profile = snapshot.val();
         const role = profile?.role || 'user';
         setUserRole(role);
-        if (!activeTab || (role === 'guardian' && activeTab === 'buddies')) {
-          setActiveTab(role === 'guardian' ? 'guardian' : 'buddies');
+        if (role === 'guardian' && activeTab === 'buddies') {
+          setActiveTab('guardian');
         }
       });
 
@@ -158,7 +159,7 @@ export default function DashboardPage() {
       });
       return () => off(notifRef, 'child_added', listener);
     }
-  }, [user, userLoading, router, rtdb]);
+  }, [user, userLoading, router, rtdb, activeTab]);
 
   const logOutTerminal = useCallback(() => signOut(auth).then(() => router.push("/login")), [auth, router]);
 
@@ -179,7 +180,7 @@ export default function DashboardPage() {
     };
 
     if (editingBuddy) {
-      // Correct Modal Transition to avoid focus lock
+      // Sequence Modal Transition to prevent freeze
       setIsBuddyDialogOpen(false);
       setTimeout(() => {
         setPendingUpdate({ type: 'buddy', data: buddyData });
@@ -208,7 +209,7 @@ export default function DashboardPage() {
     };
 
     if (editingNode) {
-      // Correct Modal Transition to avoid focus lock
+      // Sequence Modal Transition to prevent freeze
       setIsNodeDialogOpen(false);
       setTimeout(() => {
         setPendingUpdate({ type: 'node', data: nodeData });
@@ -230,7 +231,6 @@ export default function DashboardPage() {
     const currentEditingBuddy = editingBuddy;
     const currentEditingNode = editingNode;
 
-    // Reset modals first to unlock UI
     setPendingUpdate(null);
 
     try {
@@ -302,6 +302,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
+      {/* 2. Navigation Structure (Handheld Bottom / Desktop Sidebar) */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-background/80 backdrop-blur-md border-t border-black/5 pb-8 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => (
           <button
@@ -328,7 +329,7 @@ export default function DashboardPage() {
               <Hexagon className="h-5 w-5" />
             </div>
             <h1 className="text-lg font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground">
-              1TAP <span className="text-primary">BUDDY</span>
+              1TAP <span className="text-primary">SECURE</span>
             </h1>
           </div>
           <nav className="flex flex-col gap-3">
@@ -408,7 +409,7 @@ export default function DashboardPage() {
                       {buddy.groups && buddy.groups.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-2">
                           {buddy.groups.map(gid => {
-                            const groupName = groups.find(g => g.id === gid)?.name || "Unknown Group";
+                            const groupName = groups.find(g => g.id === gid)?.name || "Unknown Protocol";
                             return (
                               <Badge key={gid} className="bg-primary/5 text-primary text-[7px] font-black border-none px-2 py-0.5 rounded-sm uppercase tracking-tighter">
                                 {groupName}
@@ -472,7 +473,7 @@ export default function DashboardPage() {
                       {node.targetGroups && node.targetGroups.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {node.targetGroups.map(gid => {
-                            const groupName = groups.find(g => g.id === gid)?.name || "Unknown Group";
+                            const groupName = groups.find(g => g.id === gid)?.name || "Unknown Protocol";
                             return (
                               <Badge key={gid} className="bg-secondary text-foreground text-[7px] font-black border border-black/5 px-2 py-0.5 rounded-sm uppercase tracking-tighter">
                                 {groupName}
@@ -584,6 +585,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      {/* 3. Operational Modals (Verification Gates) */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
         <AlertDialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <AlertDialogHeader>
@@ -618,7 +620,7 @@ export default function DashboardPage() {
               <ShieldCheck className="h-5 w-5 text-primary" /> Confirm Sync
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[10px] font-black uppercase tracking-widest text-foreground pt-4 leading-relaxed">
-              Are you sure you want to synchronize these changes?
+              Are you sure you want to synchronize these changes to the master vault?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="pt-6 gap-3">
@@ -633,7 +635,7 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isBuddyDialogOpen} onOpenChange={setIsBuddyDialogOpen}>
+      <Dialog open={isBuddyDialogOpen} onOpenChange={(open) => { setIsBuddyDialogOpen(open); if (!open) setEditingBuddy(null); }}>
         <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
@@ -681,7 +683,7 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isNodeDialogOpen} onOpenChange={setIsNodeDialogOpen}>
+      <Dialog open={isNodeDialogOpen} onOpenChange={(open) => { setIsNodeDialogOpen(open); if (!open) setEditingNode(null); }}>
         <DialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
