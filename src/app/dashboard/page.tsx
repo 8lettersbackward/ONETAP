@@ -346,26 +346,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleToggleNodeGroup = async (nodeId: string, groupName: string, currentTargetGroups: string[]) => {
-    if (!user || !rtdb) return;
-    const isTargeted = currentTargetGroups.includes(groupName);
-    const newTargetGroups = isTargeted 
-      ? currentTargetGroups.filter(g => g !== groupName)
-      : [...currentTargetGroups, groupName];
-    
-    try {
-      await update(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), {
-        targetGroups: newTargetGroups
-      });
-      toast({ 
-        title: "Protocol Synced", 
-        description: `${groupName} ${isTargeted ? 'deactivated' : 'activated'} for this asset.` 
-      });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Protocol Error", description: err.message });
-    }
-  };
-
   const toggleGroupSelection = (groupId: string, checked: boolean) => {
     setSelectedGroups(prev => 
       checked ? [...prev, groupId] : prev.filter(id => id !== groupId)
@@ -398,6 +378,7 @@ export default function DashboardPage() {
     const normalizedHardwareId = hardwareId.trim().toLowerCase();
     const normalizedNodeName = nodeName.trim().toLowerCase();
 
+    // GLOBAL HARDWARE ID VALIDATION
     const isHardwareIdDuplicate = nodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId && n.id !== editingNode?.id) || 
                                  availableNodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId);
     
@@ -410,6 +391,7 @@ export default function DashboardPage() {
       return;
     }
 
+    // LOCAL NAME VALIDATION
     const isNodeNameDuplicate = nodes.some(n => n.nodeName.toLowerCase() === normalizedNodeName && n.id !== editingNode?.id);
     
     if (isNodeNameDuplicate) {
@@ -421,10 +403,8 @@ export default function DashboardPage() {
       return;
     }
 
-    const targetGroupNames = selectedGroups.map(id => {
-      const g = groups.find(group => group.id === id);
-      return g ? g.name : id;
-    });
+    // ALWAYS ACTIVATE ALL PROTOCOL NAMES
+    const allGroupNames = groups.map(g => g.name);
 
     const nodeData = {
       nodeName,
@@ -432,7 +412,7 @@ export default function DashboardPage() {
       phoneNumber: formData.get('nodePhoneNumber') as string,
       status: 'online',
       temperature: parseFloat(formData.get('tacticalTemperature') as string) || 24.5,
-      targetGroups: targetGroupNames
+      targetGroups: allGroupNames
     };
 
     setIsNodeDialogOpen(false);
@@ -494,9 +474,11 @@ export default function DashboardPage() {
   const deleteGroup = async (id: string) => {
     if (!user || !rtdb) return;
     try {
+      const groupName = groups.find(g => g.id === id)?.name;
       const updates: any = {};
       updates[`users/${user.uid}/buddyGroups/${id}`] = null;
       
+      // CASCADE: Purge from buddies
       buddies.forEach(buddy => {
         if (buddy.groups && buddy.groups.includes(id)) {
           const filteredGroups = buddy.groups.filter((gid: string) => gid !== id);
@@ -504,8 +486,8 @@ export default function DashboardPage() {
         }
       });
 
+      // CASCADE: Purge from nodes targetGroups (using name comparison)
       nodes.forEach(node => {
-        const groupName = groups.find(g => g.id === id)?.name;
         if (groupName && node.targetGroups && node.targetGroups.includes(groupName)) {
           const filteredTargetGroups = node.targetGroups.filter(gn => gn !== groupName);
           updates[`users/${user.uid}/nodes/${node.id}/targetGroups`] = filteredTargetGroups;
@@ -513,7 +495,7 @@ export default function DashboardPage() {
       });
       
       await update(ref(rtdb), updates);
-      toast({ title: "Protocol Purged", description: "Security group decommissioned and purged from all personnel." });
+      toast({ title: "Protocol Purged", description: "Group decommissioned and purged from all personnel and assets." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Purge Error", description: err.message });
     }
@@ -698,7 +680,7 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Nodes</h2>
-                <Button onClick={() => { setEditingNode(null); setSelectedGroups(groups.map(g => g.id)); setIsNodeDialogOpen(true); }} className="neo-btn w-full sm:w-auto h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
+                <Button onClick={() => { setEditingNode(null); setIsNodeDialogOpen(true); }} className="neo-btn w-full sm:w-auto h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-background text-foreground hover:text-primary transition-all">
                   <Cpu className="h-4 w-4 mr-2 text-primary" /> ARM NODE
                 </Button>
               </div>
@@ -713,7 +695,7 @@ export default function DashboardPage() {
                     <div key={node.id} className="neo-flat p-6 space-y-6 hover:shadow-lg transition-shadow duration-300 group">
                       <div className="flex justify-between items-start">
                         <div className="flex gap-4 items-center">
-                          <div className={cn("h-10 w-10 neo-inset flex items-center justify-center border border-black/5", node.status === 'online' ? "text-green-500" : "text-muted-foreground")}>
+                          <div className={cn("h-10 w-10 neo-inset flex items-center justify-center border border-black/5 text-muted-foreground")}>
                             <Cpu className="h-5 w-5" />
                           </div>
                           <div>
@@ -724,23 +706,14 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {groups.map(group => {
-                          const isTargeted = node.targetGroups?.includes(group.name);
-                          return (
-                            <button
-                              key={group.id}
-                              onClick={() => handleToggleNodeGroup(node.id, group.name, node.targetGroups || [])}
-                              className={cn(
-                                "text-[7px] font-black px-2 py-0.5 rounded-sm uppercase border transition-all",
-                                isTargeted 
-                                  ? "bg-primary border-primary text-white shadow-sm" 
-                                  : "bg-secondary/20 border-black/5 text-muted-foreground hover:border-primary/40"
-                              )}
-                            >
-                              {group.name}
-                            </button>
-                          );
-                        })}
+                        {groups.map(group => (
+                          <div
+                            key={group.id}
+                            className="text-[7px] font-black px-2 py-0.5 rounded-sm uppercase border transition-all bg-primary border-primary text-white shadow-sm"
+                          >
+                            {group.name}
+                          </div>
+                        ))}
                         {groups.length === 0 && (
                           <p className="text-[7px] font-black text-muted-foreground/40 uppercase">No Protocols Defined</p>
                         )}
@@ -759,11 +732,6 @@ export default function DashboardPage() {
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 neo-btn text-muted-foreground hover:text-primary" onClick={() => { 
                           setEditingNode(node); 
-                          const mappedGroups = node.targetGroups ? node.targetGroups.map(val => {
-                            const g = groups.find(group => group.name === val || group.id === val);
-                            return g ? g.id : val;
-                          }) : [];
-                          setSelectedGroups(mappedGroups); 
                           setIsNodeDialogOpen(true); 
                         }}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1041,6 +1009,7 @@ export default function DashboardPage() {
               onClick={() => {
                 const type = deleteConfirm?.type;
                 const id = deleteConfirm?.id;
+                // FIX: Release focus-lock immediately
                 setDeleteConfirm(null);
                 
                 setTimeout(() => {
@@ -1181,27 +1150,9 @@ export default function DashboardPage() {
               <Input name="tacticalTemperature" type="number" step="0.1" defaultValue={editingNode?.temperature || 24.5} required className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" />
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Target Protocols</Label>
-              <ScrollArea className="h-40 neo-inset p-4 bg-white/20 rounded-[1.5rem]">
-                <div className="flex flex-col gap-5 py-2">
-                  {groups.length === 0 ? (
-                    <p className="text-[8px] text-center text-muted-foreground uppercase py-8 font-black">No protocols defined</p>
-                  ) : (
-                    groups.map(group => (
-                      <div key={group.id} className="flex items-center space-x-3 py-1 shrink-0">
-                        <Checkbox 
-                          id={`node-group-${group.id}`} 
-                          checked={selectedGroups.includes(group.id)} 
-                          onCheckedChange={(checked) => toggleGroupSelection(group.id, !!checked)}
-                          className="border-primary/40 h-5 w-5 rounded-sm shrink-0"
-                        />
-                        <Label htmlFor={`node-group-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none truncate">{group.name}</Label>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
+            <div className="p-4 neo-inset bg-primary/5 space-y-2 border border-primary/10 rounded-[1.5rem]">
+               <p className="text-[10px] font-black text-primary uppercase tracking-widest text-center">Protocol Synchronizer Active</p>
+               <p className="text-[8px] font-black text-muted-foreground uppercase text-center">All personnel groups will be automatically activated for this asset.</p>
             </div>
 
             <DialogFooter className="pt-4 pb-2">
@@ -1333,7 +1284,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="flex-1 overflow-y-auto pr-2 space-y-6 mt-4">
             <div className="neo-inset p-6 flex flex-col items-center gap-4 text-center">
-              <div className={cn("h-16 w-16 neo-flat flex items-center justify-center border border-black/5 text-green-500")}>
+              <div className={cn("h-16 w-16 neo-flat flex items-center justify-center border border-black/5 text-primary")}>
                 <Cpu className="h-8 w-8" />
               </div>
               <div>
