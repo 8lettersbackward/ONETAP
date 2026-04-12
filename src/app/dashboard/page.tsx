@@ -108,6 +108,7 @@ export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [radarSearchTerm, setRadarSearchTerm] = useState("");
   const [hasNewAlerts, setHasNewAlerts] = useState(false);
+  const [lastReadTimestamp, setLastReadTimestamp] = useState<number>(Date.now());
 
   const [isBuddyDialogOpen, setIsBuddyDialogOpen] = useState(false);
   const [isNodeDialogOpen, setIsNodeDialogOpen] = useState(false);
@@ -136,9 +137,19 @@ export default function DashboardPage() {
   const { data: linksData } = useRtdb(linksRef);
   const { data: allUsersData } = useRtdb(allUsersRef);
 
-  const buddies = useMemo(() => buddiesData ? Object.entries(buddiesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [buddiesData]);
-  const nodes = useMemo(() => nodesData ? Object.entries(nodesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [nodesData]);
   const groups = useMemo(() => groupsData ? Object.entries(groupsData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [groupsData]);
+  
+  const buddies = useMemo(() => {
+    if (!buddiesData) return [];
+    const activeGroupIds = new Set(groups.map(g => g.id));
+    return Object.entries(buddiesData).map(([id, val]: [string, any]) => {
+      // Ensure only valid groups that exist in buddyGroups are shown
+      const validatedGroups = (val.groups || []).filter((gid: string) => activeGroupIds.has(gid));
+      return { ...val, id, groups: validatedGroups };
+    });
+  }, [buddiesData, groups]);
+
+  const nodes = useMemo(() => nodesData ? Object.entries(nodesData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [nodesData]);
   const notifications = useMemo(() => notificationsData ? Object.entries(notificationsData).map(([id, val]: [string, any]) => ({ ...val, id, createdAt: val.createdAt || val.timestamp || 0 })).sort((a, b) => b.createdAt - a.createdAt) : [], [notificationsData]);
   const links = useMemo(() => linksData ? Object.entries(linksData).map(([id, val]: [string, any]) => ({ ...val, id })) : [], [linksData]);
 
@@ -207,7 +218,7 @@ export default function DashboardPage() {
         const now = Date.now();
         const timestamp = val.timestamp || val.createdAt || 0;
         
-        if (activeTab !== 'notifications' && (now - timestamp < 10000)) {
+        if (activeTab !== 'notifications' && (timestamp > lastReadTimestamp)) {
           setHasNewAlerts(true);
         }
 
@@ -217,11 +228,12 @@ export default function DashboardPage() {
       });
       return () => off(notifRef, 'child_added', listener);
     }
-  }, [user, userLoading, router, rtdb, activeTab]);
+  }, [user, userLoading, router, rtdb, activeTab, lastReadTimestamp]);
 
   useEffect(() => {
     if (activeTab === 'notifications') {
       setHasNewAlerts(false);
+      setLastReadTimestamp(Date.now());
     }
   }, [activeTab]);
 
@@ -390,7 +402,7 @@ export default function DashboardPage() {
       return;
     }
 
-    // MAP GROUP IDs TO NAMES AS REQUESTED
+    // MAP GROUP IDs TO NAMES FOR NODES (as requested)
     const targetGroupNames = selectedGroups.map(id => {
       const g = groups.find(group => group.id === id);
       return g ? g.name : id;
@@ -464,7 +476,20 @@ export default function DashboardPage() {
   const deleteGroup = async (id: string) => {
     if (!user || !rtdb) return;
     try {
-      await remove(ref(rtdb, `users/${user.uid}/buddyGroups/${id}`));
+      const updates: any = {};
+      // 1. Remove the group itself
+      updates[`users/${user.uid}/buddyGroups/${id}`] = null;
+      
+      // 2. CASCADE: Remove this group ID from all buddies who have it (as requested)
+      buddies.forEach(buddy => {
+        if (buddy.groups && buddy.groups.includes(id)) {
+          const filteredGroups = buddy.groups.filter((gid: string) => gid !== id);
+          updates[`users/${user.uid}/buddies/${buddy.id}/groups`] = filteredGroups;
+        }
+      });
+      
+      await update(ref(rtdb), updates);
+      toast({ title: "Protocol Purged", description: "Security group decommissioned and purged from all personnel." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Purge Error", description: err.message });
     }
