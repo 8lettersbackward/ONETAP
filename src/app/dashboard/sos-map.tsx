@@ -10,9 +10,10 @@ interface SOSMapProps {
   latitude: number | string;
   longitude: number | string;
   mapLabel?: string;
+  variant?: 'sos' | 'track';
 }
 
-export default function SOSMap({ latitude, longitude, mapLabel }: SOSMapProps) {
+export default function SOSMap({ latitude, longitude, mapLabel, variant = 'sos' }: SOSMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -75,13 +76,18 @@ export default function SOSMap({ latitude, longitude, mapLabel }: SOSMapProps) {
   useEffect(() => {
     if (!mapInstance.current || !isValid) return;
 
+    const accentClass = variant === 'sos' ? 'bg-destructive' : 'bg-primary';
+    const ringClass = variant === 'sos' ? 'bg-destructive/20' : 'bg-primary/20';
+    const pulseClass = variant === 'sos' ? 'bg-destructive/10' : 'bg-primary/10';
+    const shadowColor = variant === 'sos' ? 'rgba(239,68,68,0.5)' : 'rgba(59,130,246,0.5)';
+
     const tacticalIcon = L.divIcon({
       className: 'tactical-marker',
       html: `
         <div class="relative">
-          <div class="absolute -inset-8 bg-destructive/20 rounded-full animate-ping"></div>
-          <div class="absolute -inset-4 bg-destructive/10 rounded-full animate-pulse"></div>
-          <div class="relative h-10 w-10 bg-destructive rounded-full border-2 border-white flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+          <div class="absolute -inset-8 ${ringClass} rounded-full animate-ping"></div>
+          <div class="absolute -inset-4 ${pulseClass} rounded-full animate-pulse"></div>
+          <div class="relative h-10 w-10 ${accentClass} rounded-full border-2 border-white flex items-center justify-center shadow-[0_0_15px_${shadowColor}]">
             <div class="h-3 w-3 bg-white rounded-full animate-pulse"></div>
           </div>
         </div>
@@ -92,7 +98,7 @@ export default function SOSMap({ latitude, longitude, mapLabel }: SOSMapProps) {
 
     const popupContent = `
       <div class="p-2 min-w-[140px]">
-        <b class="text-[#1A2B3C] uppercase font-black text-[10px] block mb-1 tracking-wider">${mapLabel || 'SOS SIGNAL'}</b>
+        <b class="text-[#1A2B3C] uppercase font-black text-[10px] block mb-1 tracking-wider">${mapLabel || (variant === 'sos' ? 'SOS SIGNAL' : 'TRACK ASSET')}</b>
         <span class="text-[8px] uppercase font-bold tracking-widest text-[#1A2B3C]/60">Coordinate Fix</span>
         <div class="mt-3 p-2 bg-[#ECF0F3] rounded-lg text-[8px] font-mono text-[#1A2B3C] border border-black/5 shadow-inner">
           LAT: ${lat.toFixed(6)}<br/>
@@ -117,7 +123,7 @@ export default function SOSMap({ latitude, longitude, mapLabel }: SOSMapProps) {
 
     mapInstance.current.panTo([lat, lng], { animate: true });
 
-  }, [lat, lng, mapLabel, isValid, isMapReady]);
+  }, [lat, lng, mapLabel, isValid, isMapReady, variant]);
 
   if (!isValid) {
     return (
