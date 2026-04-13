@@ -126,6 +126,7 @@ export default function DashboardPage() {
   const [viewingBuddy, setViewingBuddy] = useState<Buddy | null>(null);
   const [viewingNode, setViewingNode] = useState<Node | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [selectedNodeGroups, setSelectedNodeGroups] = useState<string[]>([]);
   
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'buddy' | 'node' | 'group' | 'link' | 'clear-notifications', name: string } | null>(null);
   const [pendingUpdate, setPendingUpdate] = useState<{ type: 'buddy' | 'node', data: any } | null>(null);
@@ -196,7 +197,7 @@ export default function DashboardPage() {
     return userRole === 'guardian' 
       ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'linked', label: 'MY GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: UserIcon }]
       : [{ id: 'buddies', label: 'MANAGE BUDDIES', icon: Users }, { id: 'nodes', label: 'MANAGE NODES', icon: Cpu }, { id: 'linked', label: 'MY GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: UserIcon }];
-  }, [userRole, UserIcon]);
+  }, [userRole]);
 
   const relayedAlertsRef = useRef<Set<string>>(new Set());
 
@@ -234,15 +235,11 @@ export default function DashboardPage() {
         if (val.type === 'sos' && val.trigger !== 'TrackResponse' && (now - timestamp < 45000)) {
           setInterceptAlert({ ...val, id: snapshot.key });
           
-          // SOS RELAY LOGIC: If I am a user and I have linked guardians, relay this SOS to them
           if (userRole === 'user' && !val.isRelay) {
             const currentAlertId = snapshot.key || 'unknown';
             if (!relayedAlertsRef.current.has(currentAlertId)) {
               relayedAlertsRef.current.add(currentAlertId);
-              
-              // Find all linked guardians
               const guardianLinks = Object.entries(linksData || {}).filter(([_, l]: [string, any]) => l.status === 'linked' && l.guardianEmail);
-              
               if (guardianLinks.length > 0) {
                 const relayUpdates: any = {};
                 guardianLinks.forEach(([guardianUid, _]) => {
@@ -387,6 +384,12 @@ export default function DashboardPage() {
     );
   };
 
+  const toggleNodeGroupSelection = (groupName: string, checked: boolean) => {
+    setSelectedNodeGroups(prev => 
+      checked ? [...prev, groupName] : prev.filter(name => name !== groupName)
+    );
+  };
+
   const handleSaveBuddy = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user || !rtdb) return;
@@ -414,7 +417,6 @@ export default function DashboardPage() {
     const normalizedHardwareId = hardwareId.trim().toLowerCase();
     const normalizedNodeName = nodeName.trim().toLowerCase();
 
-    // GLOBAL HARDWARE ID VALIDATION
     const isHardwareIdDuplicate = nodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId && n.id !== editingNode?.id) || 
                                  availableNodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId);
     
@@ -427,7 +429,6 @@ export default function DashboardPage() {
       return;
     }
 
-    // LOCAL NAME VALIDATION
     const isNodeNameDuplicate = nodes.some(n => n.nodeName.toLowerCase() === normalizedNodeName && n.id !== editingNode?.id);
     
     if (isNodeNameDuplicate) {
@@ -439,16 +440,13 @@ export default function DashboardPage() {
       return;
     }
 
-    // ALWAYS ACTIVATE ALL PROTOCOL NAMES
-    const allGroupNames = groups.map(g => g.name);
-
     const nodeData = {
       nodeName,
       hardwareId,
       phoneNumber: formData.get('nodePhoneNumber') as string,
       status: 'online',
       temperature: parseFloat(formData.get('tacticalTemperature') as string) || 24.5,
-      targetGroups: allGroupNames,
+      targetGroups: selectedNodeGroups,
       registeredAt: serverTimestamp()
     };
 
@@ -515,7 +513,6 @@ export default function DashboardPage() {
       const updates: any = {};
       updates[`users/${user.uid}/buddyGroups/${id}`] = null;
       
-      // CASCADE: Purge from buddies
       buddies.forEach(buddy => {
         if (buddy.groups && buddy.groups.includes(id)) {
           const filteredGroups = buddy.groups.filter((gid: string) => gid !== id);
@@ -523,7 +520,6 @@ export default function DashboardPage() {
         }
       });
 
-      // CASCADE: Purge from nodes targetGroups (using name comparison)
       nodes.forEach(node => {
         if (groupName && node.targetGroups && node.targetGroups.includes(groupName)) {
           const filteredTargetGroups = node.targetGroups.filter(gn => gn !== groupName);
@@ -557,6 +553,20 @@ export default function DashboardPage() {
       await push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name });
       toast({ title: "Protocol Created", description: `Security group initialized.` });
       (e.target as HTMLFormElement).reset();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Protocol Error", description: err.message });
+    }
+  };
+
+  const quickAddGroup = async (name: string) => {
+    if (!user || !rtdb) return;
+    if (groups.some(g => g.name.toLowerCase() === name.toLowerCase())) {
+      toast({ title: "Protocol Exists", description: `${name} group already defined.` });
+      return;
+    }
+    try {
+      await push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name });
+      toast({ title: "Protocol Created", description: `${name} initialized.` });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Protocol Error", description: err.message });
     }
@@ -717,7 +727,7 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Manage Nodes</h2>
-                <Button onClick={() => { setEditingNode(null); setIsNodeDialogOpen(true); }} className="w-full sm:w-auto h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-primary text-white hover:bg-primary/90 transition-all rounded-xl shadow-lg shadow-primary/20">
+                <Button onClick={() => { setEditingNode(null); setSelectedNodeGroups([]); setIsNodeDialogOpen(true); }} className="w-full sm:w-auto h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-primary text-white hover:bg-primary/90 transition-all rounded-xl shadow-lg shadow-primary/20">
                   <Cpu className="h-4 w-4 mr-2" /> ARM NODE
                 </Button>
               </div>
@@ -743,12 +753,12 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {groups.map(group => (
+                        {node.targetGroups?.map((gn, idx) => (
                           <div
-                            key={group.id}
+                            key={idx}
                             className="text-[7px] font-black px-2 py-0.5 rounded-sm uppercase border transition-all bg-primary border-primary text-white shadow-sm"
                           >
-                            {group.name}
+                            {gn}
                           </div>
                         ))}
                       </div>
@@ -764,7 +774,7 @@ export default function DashboardPage() {
                         <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary bg-[#F8FAFC] rounded-lg" onClick={() => setViewingNode(node)}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary bg-[#F8FAFC] rounded-lg" onClick={() => { setEditingNode(node); setIsNodeDialogOpen(true); }}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary bg-[#F8FAFC] rounded-lg" onClick={() => { setEditingNode(node); setSelectedNodeGroups(node.targetGroups || []); setIsNodeDialogOpen(true); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive bg-[#F8FAFC] rounded-lg" onClick={() => setDeleteConfirm({ id: node.id, type: 'node', name: node.nodeName })}>
@@ -920,7 +930,6 @@ export default function DashboardPage() {
                       return (
                         <Collapsible key={n.id} className="mb-6 group/item">
                           <div className={cn("p-4 sm:p-6 bg-white rounded-[2rem] border border-black/5 relative overflow-hidden transition-all duration-300 hover:shadow-lg flex gap-4 sm:gap-6")}>
-                            {/* Tactical Vertical Bar - Increased to w-3 (12px) */}
                             <div className={cn("w-2 sm:w-3 shrink-0 rounded-full", accentColor)} />
                             
                             <div className="flex flex-col justify-between items-start relative z-10 flex-1 min-w-0">
@@ -1129,11 +1138,6 @@ export default function DashboardPage() {
                 type="tel"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                onKeyPress={(e) => {
-                  if (!/[0-9]/.test(e.key)) {
-                    e.preventDefault();
-                  }
-                }}
                 defaultValue={editingBuddy?.phoneNumber} 
                 required 
                 className="h-12 bg-white border border-black/5 px-5 font-black uppercase text-[10px] rounded-xl" 
@@ -1196,11 +1200,6 @@ export default function DashboardPage() {
                 type="tel"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                onKeyPress={(e) => {
-                  if (!/[0-9]/.test(e.key)) {
-                    e.preventDefault();
-                  }
-                }}
                 defaultValue={editingNode?.phoneNumber} 
                 className="h-12 bg-white border border-black/5 px-5 font-black uppercase text-[10px] rounded-xl" 
               />
@@ -1210,9 +1209,27 @@ export default function DashboardPage() {
               <Input name="tacticalTemperature" type="number" step="0.1" defaultValue={editingNode?.temperature || 24.5} required className="h-12 bg-white border border-black/5 px-5 font-black uppercase text-[10px] rounded-xl" />
             </div>
 
-            <div className="p-4 rounded-2xl bg-primary/5 space-y-2 border border-primary/10">
-               <p className="text-[10px] font-black text-primary uppercase tracking-widest text-center">Protocol Synchronizer Active</p>
-               <p className="text-[8px] font-black text-muted-foreground uppercase text-center">All personnel groups will be automatically activated for this asset.</p>
+            <div className="space-y-3">
+              <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Protocol Selection</Label>
+              <ScrollArea className="h-40 bg-[#F8FAFC] p-4 rounded-2xl border border-black/5">
+                <div className="flex flex-col gap-5 py-2">
+                  {groups.length === 0 ? (
+                    <p className="text-[8px] text-center text-muted-foreground uppercase py-8 font-black">No protocols defined</p>
+                  ) : (
+                    groups.map(group => (
+                      <div key={group.id} className="flex items-center space-x-3 py-1 shrink-0">
+                        <Checkbox 
+                          id={`node-group-sel-${group.id}`} 
+                          checked={selectedNodeGroups.includes(group.name)} 
+                          onCheckedChange={(checked) => toggleNodeGroupSelection(group.name, !!checked)}
+                          className="border-primary/40 h-5 w-5 rounded-md shrink-0"
+                        />
+                        <Label htmlFor={`node-group-sel-${group.id}`} className="text-[10px] font-black uppercase text-foreground cursor-pointer select-none truncate">{group.name}</Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             </div>
 
             <DialogFooter className="pt-4 pb-2">
@@ -1232,8 +1249,26 @@ export default function DashboardPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-8 mt-4">
+            <div className="space-y-3">
+              <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Quick Add Defaults</Label>
+              <div className="flex flex-wrap gap-2">
+                {['FRIEND', 'FAMILY', 'BESTFRIEND'].map(def => (
+                  <Button 
+                    key={def} 
+                    type="button"
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-[8px] font-black uppercase px-4 rounded-xl border-black/5 bg-[#F8FAFC] hover:text-primary transition-all"
+                    onClick={() => quickAddGroup(def)}
+                  >
+                    + {def}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             <form onSubmit={handleAddGroup} className="space-y-3">
-              <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">New Protocol Group</Label>
+              <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Custom Protocol Group</Label>
               <div className="flex gap-2">
                 <Input name="groupName" required className="h-12 bg-white border border-black/5 flex-1 px-4 font-black uppercase text-[10px] rounded-xl" />
                 <Button type="submit" size="icon" className="h-12 w-12 bg-primary text-white rounded-xl"><PlusSquare className="h-5 w-5" /></Button>
@@ -1418,4 +1453,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
