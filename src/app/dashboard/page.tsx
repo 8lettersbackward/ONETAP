@@ -116,8 +116,9 @@ export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [radarSearchTerm, setRadarSearchTerm] = useState("");
   const [hasNewAlerts, setHasNewAlerts] = useState(false);
-  const lastReadRef = useRef<number>(0);
+  const lastReadRef = useRef<number>(Date.now());
   const interceptedAlertsRef = useRef<Set<string>>(new Set());
+  const activeTabRef = useRef<TabType>('notifications');
 
   const [isBuddyDialogOpen, setIsBuddyDialogOpen] = useState(false);
   const [isNodeDialogOpen, setIsNodeDialogOpen] = useState(false);
@@ -206,8 +207,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setHasMounted(true);
-    lastReadRef.current = Date.now();
-  }, []);
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   useEffect(() => {
     if (!userLoading && !user && hasMounted) {
@@ -221,11 +222,6 @@ export default function DashboardPage() {
     if (profileData) {
       const role = profileData.role || 'user';
       setUserRole(role);
-      if (role === 'guardian' && (activeTab === 'buddies' || activeTab === 'nodes')) {
-        setActiveTab('guardian');
-      } else if (role === 'user' && activeTab === 'guardian') {
-        setActiveTab('buddies');
-      }
     }
   }, [profileData]);
 
@@ -238,7 +234,7 @@ export default function DashboardPage() {
         const timestamp = val.timestamp || val.createdAt || 0;
         const alertId = snapshot.key || 'unknown';
         
-        if (activeTab !== 'notifications' && (timestamp > lastReadRef.current) && lastReadRef.current !== 0) {
+        if (activeTabRef.current !== 'notifications' && (timestamp > lastReadRef.current)) {
           setHasNewAlerts(true);
         }
 
@@ -248,7 +244,7 @@ export default function DashboardPage() {
             setInterceptAlert({ ...val, id: alertId });
           }
           
-          if (userRole === 'user' && !val.isRelay && !val.relayed) {
+          if (userRole === 'user' && !val.relayed) {
             if (!relayedAlertsRef.current.has(alertId)) {
               relayedAlertsRef.current.add(alertId);
               
@@ -262,6 +258,7 @@ export default function DashboardPage() {
                   relayUpdates[`users/${guardianUid}/notifications/${relayKey}`] = {
                     ...val,
                     isRelay: true,
+                    relayed: true,
                     originalUser: user.email,
                     relayTimestamp: serverTimestamp(),
                     createdAt: serverTimestamp()
@@ -275,7 +272,7 @@ export default function DashboardPage() {
       });
       return () => off(notifRef, 'child_added', listener);
     }
-  }, [user, rtdb, activeTab, userRole, linksData]);
+  }, [user, rtdb, userRole, linksData]);
 
   useEffect(() => {
     if (activeTab === 'notifications') {
@@ -1433,8 +1430,8 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-[#F8FAFC] p-4 text-center space-y-1 rounded-2xl border border-black/5">
-                <p className="text-[8px] font-black text-foreground/40 uppercase tracking-tighter">Thermal Baseline</p>
-                <p className="text-sm font-black text-foreground">{viewingNode?.temperature || '--'}°C</p>
+                <p className="text-[8px] font-black text-foreground/40 uppercase tracking-tighter">Asset Name</p>
+                <p className="text-sm font-black text-foreground">{viewingNode?.nodeName || '--'}</p>
               </div>
               <div className="bg-[#F8FAFC] p-4 text-center space-y-1 rounded-2xl border border-black/5">
                 <p className="text-[8px] font-black text-foreground/40 uppercase tracking-tighter">Owner Sector</p>
