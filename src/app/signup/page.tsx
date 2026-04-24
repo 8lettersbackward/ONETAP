@@ -124,9 +124,9 @@ export default function SignupPage() {
                   <RadioGroupItem value="guardian" id="guardian" className="peer sr-only" />
                   <Label
                     htmlFor="guardian"
-                    className="flex flex-col items-center justify-between rounded-2xl border-2 border-primary/10 bg-primary/5 p-4 hover:bg-primary/10 peer-data-[state=checked]:border-secondary [&:has([data-state=checked])]:border-secondary cursor-pointer transition-all"
+                    className="flex flex-col items-center justify-between rounded-2xl border-2 border-primary/10 bg-primary/5 p-4 hover:bg-primary/10 peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
                   >
-                    <Shield className="mb-2 h-6 w-6 text-secondary" />
+                    <Shield className="mb-2 h-6 w-6 text-primary" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Guardian</span>
                   </Label>
                 </div>
